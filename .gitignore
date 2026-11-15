@@ -1,0 +1,39 @@
+# --- Secrets / local notes (never commit) ---
+info-blank.txt
+.env
+.env.*
+!.env.example
+
+# --- Real HR data (PDPA) — never commit ---
+private/
+*.kakitangan-export.*
+
+# --- Node / Next.js ---
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Supabase ---
+.branches
+.temp
+supabase/.env
+
+# --- Logs / OS ---
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+*.log
+
+# --- Editor ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# --- Claude Code local (machine-specific) ---
+.claude/settings.local.json
+.claude/worktrees/
+.claude/launch.json

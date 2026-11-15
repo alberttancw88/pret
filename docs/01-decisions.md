@@ -35,7 +35,7 @@ Each item is marked:
 | D13 | Leave entitlements (PRD Q7) | ✅ Correct entitlements to the **statutory minimum** (Employment Act 1955 as amended 2022): fixes the four Kakitangan gaps (maternity 98, paternity 7, hospitalisation 60, service-banded sick and annual leave). |
 | D15 | Bank details | ✅ Employee bank details can be maintained by **Super Admin or Admin** — no Super Admin confirmation step for Admin changes (changes still logged). |
 | D16 | Payment route | ✅ **All payments go through Hong Leong Bank directly** (manual HLB Connect First, per D6) — claims reimbursements in R1.0 and salaries in R1.1. No Kakitangan payroll handover for claims. |
-| D17 | System name | ✅ The system is called **PRET** (Interact's internal HR & Payroll system). GitHub repository: private, under Albert's account. |
+| D17 | System name | ✅ The system is called **PRET** (Interact's internal HR & Payroll system). GitHub repository: `alberttancw88/pret` (private), linked as `origin` 15/11/2026. |
 | D14 | PDPA extras (PRD Q30) | ✅ **Not required** as system features: no data-processing-agreement fields or go-live block for the outsourced Admin, no DPO setup, no privacy-notice acknowledgement workflow. Hosting stays Singapore (R1). |
 
 ## Recommended (proceeds unless Albert objects)
@@ -50,3 +50,17 @@ Each item is marked:
 ## Needs Albert's input
 
 Tracked in `docs/product/PRD.md` → "Open Questions for Albert" once Gate-1 artefacts exist.
+
+## Decided by Albert at Gate 2 review (2026-11-15)
+
+**GATE 2 approved 2026-11-15** — architecture (`docs/architecture/`), UX (`docs/design/ux/`) and UI (`docs/design/ui/`) as summarised in `docs/gate-2-review.md`, with every open question at its proposed default (Q-ARCH-01–13, UXQ-01–14, UI-1–5).
+
+| # | Area | Decision |
+|---|------|----------|
+| D18 | Data access | ✅ Server-only data access; Supabase Data API (PostgREST/GraphQL) off (ADR-0002). Departs from Direct Order's browser-to-Supabase pattern. |
+| D19 | Security | ✅ MFA (authenticator app) mandatory for Admin and Super Admin, incl. the outsourced administrator; NRIC and bank numbers encrypted at the application layer with keys outside the database; Albert holds an offline key copy (ADR-0003, ADR-0014, Q-ARCH-08). |
+| D20 | Backups & plans | ✅ Nightly encrypted off-site copy of Storage files (+ weekly logical DB dump) to a second location in Singapore; Supabase **Pro** and Vercel **Pro** (Q-ARCH-06, Q-ARCH-07). |
+| D21 | Email & uploads | ✅ Same transactional email provider as Direct Order, no sensitive data in emails; no third-party malware scanning in R1.0 (Q-ARCH-05, Q-ARCH-09). |
+| D22 | Second Super Admin | ✅ A second Super Admin to be added before R1.1; until then the Admin prepares payroll runs and Albert approves. **Holder to be named by Albert.** |
+| D23 | Cheque/cash payees | ✅ Shown in a separate "Pay by cheque/cash" section of the claims batch, excluded from the HLB list (UXQ-06). |
+| D24 | Visual | ✅ Buttons/active nav `#5A5FF2` (AA); brand `#666CFF` for accents; light mode only; phone bottom bar. Logo SVG + "i" mark **to be supplied by Albert**. |

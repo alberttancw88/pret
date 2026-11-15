@@ -9,6 +9,18 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-11-15 — GATE 2 (Design) approved
+### Added
+- Architecture: system design, data model (141 tables incl. R1.1 payroll design), RLS
+  policies for every table, non-functional design, ADR-0001 to ADR-0016.
+- UX: screen inventory (165 screens), information architecture per role, field-level
+  wireframes by module, interaction notes.
+- UI: MUI design-system tokens (AA-compliant palette), component specs, dashboard visuals.
+- GATE 2 review pack (`docs/gate-2-review.md`) and decisions D18–D24.
+### Changed
+- System renamed **PRET** across docs; GitHub remote `alberttancw88/pret` recorded.
+- UI reference updated to the four roles (D11) and claim statuses (D12).
+
 ## [0.1.0] — 2026-11-15 — GATE 1 (Scope) approved
 ### Added
 - Project governance adopted from Direct Order: Delivery Lead instructions (`CLAUDE.md`),

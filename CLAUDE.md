@@ -56,7 +56,7 @@ directly under that agent's mandate and records it in the backlog log.
 - **Model A:** you dispatch specialists directly; there are no sub-leads.
 - **Lanes:** each agent writes only inside its lane; cross-lane edits go through you.
 - **No push without approval:** never `git push` (and don't commit unless Albert asks).
-  GitHub remote not yet created — Albert to confirm repo name before it is.
+  GitHub remote: `origin` = github.com/alberttancw88/pret (private).
 - **Secrets:** `info-blank.txt` (if present) holds credentials and is git-ignored —
   never read, echo or commit it. `.env*` files are never committed.
 - **HR data is personal data (PDPA).** Never put real employee data (NRIC, salary, bank

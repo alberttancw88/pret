@@ -47,17 +47,17 @@ The Sales Invoice screen is the template for every list/management screen:
    icon button (eye = view).
 4. **Pagination footer**: "Rows per page" select + "1–10 of N" + prev/next chevrons.
 
-## How this maps to HRMS screens
+## How this maps to PRET screens
 
-| Interact pattern | HRMS screens that reuse it |
+| Interact pattern | PRET screens that reuse it |
 |------------------|----------------------------|
-| List + filter + table + actions | HR: employee list, leave applications, claims, leave balances, public holidays, leave/claim types. Employee: my leave, my claims. Manager: approvals queue. |
+| List + filter + table + actions | Admin: employee list, leave applications, claims, leave balances, public holidays, leave/claim types. Employee: my leave, my claims. Manager: approvals queue. |
 | First-column link drill-in | Employee no. → employee profile; Leave ref → leave detail; Claim no. → claim detail. |
-| Status chips | Leave status (pending/approved/rejected/cancelled), claim status (draft/submitted/approved/rejected/paid), employment status. |
-| Export CSV (green) | Every HR list; claims payment export. |
-| Left-nav app shell | One shell; nav items driven by role (Employee / Manager / HR Admin / Finance / Super Admin). |
+| Status chips | Leave status (pending/approved/rejected/cancelled), claim status (D12: New / Submitted / Approved / Disbursed / Rejected / Withdrawn / Cancelled), employment status. |
+| Export CSV (green) | Every list; month-end HLB payment list and AutoCount .xlsx exports. |
+| Left-nav app shell | One shell; nav items driven by role (D11: Employee / Manager / Admin / Super Admin). |
 | Role chip by user | Show the signed-in user's role. |
-| KPI cards | Employee dashboard (leave balances, pending claims) and HR dashboard (headcount, pending approvals, on leave today). |
+| KPI cards | Employee dashboard (leave balances, pending claims) and Admin dashboard (headcount, pending approvals, on leave today). |
 
 ## Notes for designers
 - **UX Designer:** use this nav + list pattern for IA and wireframes; the employee portal is

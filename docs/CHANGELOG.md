@@ -9,6 +9,31 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-11-16 — W2-001 Foundation built
+### Added
+- Next.js 15 + React 19 scaffold; MUI 7 theme (Inter, `#5A5FF2` primary, dd/mm/yyyy
+  date pickers), Vercel region `sin1`.
+- App shell: role-filtered left nav, collapsible rail, phone drawer + bottom bar, role chip,
+  notifications panel, user menu, idle timeout.
+- Shared components: StatusChip (15 status sets), ListPage, MoneyText (`RM 1,234.56`),
+  DateText, empty/error/loading states, confirm and reason dialogs, toasts, dashboard tiles.
+- Auth screens and server actions: sign-in, MFA enrol/verify (mandatory for Admin and
+  Super Admin), accept invite, forgot/reset password (12-character rule), sign-out.
+- Server-only data access (ADR-0002): Postgres via Supavisor with verified TLS, every query
+  run as the signed-in user so RLS applies; live role lookup (ADR-0001).
+- Field encryption for NRIC/bank numbers with key versions and blind index (ADR-0003);
+  append-only audit and access log; private Storage helpers with signed URLs.
+- Database (9 migrations on `pret-dev`): 22 core tables, RLS forced on all, 45 table + 2
+  Storage policies, 7 private buckets, `private.bootstrap_super_admin`; synthetic seed and
+  role-matrix test.
+- Formatting library (`src/lib/format`) with unit tests; `/dev/components` gallery (dev only).
+- Interact logo and "i" mark (high-resolution, transparent) from Albert.
+- Dev setup guide `docs/guides/dev-setup-pret-dev.md`; `.env.example`.
+### Known gaps
+- Not yet exercised in a browser (waits on the remaining pret-dev setup steps).
+- Idle-timeout re-sign-in does not keep unsaved form data; DataGrid not installed (plain
+  table); `sharp` needed for upload image re-encoding.
+
 ## [0.2.0] — 2026-11-15 — GATE 2 (Design) approved
 ### Added
 - Architecture: system design, data model (141 tables incl. R1.1 payroll design), RLS

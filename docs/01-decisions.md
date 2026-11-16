@@ -64,3 +64,4 @@ Tracked in `docs/product/PRD.md` → "Open Questions for Albert" once Gate-1 art
 | D22 | Second Super Admin | ✅ A second Super Admin to be added before R1.1; until then the Admin prepares payroll runs and Albert approves. **Holder to be named by Albert.** |
 | D23 | Cheque/cash payees | ✅ Shown in a separate "Pay by cheque/cash" section of the claims batch, excluded from the HLB list (UXQ-06). |
 | D24 | Visual | ✅ Buttons/active nav `#5A5FF2` (AA); brand `#666CFF` for accents; light mode only; phone bottom bar. Logo SVG + "i" mark **to be supplied by Albert**. |
+| D25 | Supabase org | ✅ PRET projects live in the existing Supabase organisation ("Interact Direct Order"). Dev project `pret-dev`, Singapore, free plan. Production project (Pro, D20) created at Wave 4. |

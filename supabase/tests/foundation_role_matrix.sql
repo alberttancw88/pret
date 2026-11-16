@@ -237,8 +237,10 @@ do $$ declare e text;
 begin
   perform set_config('request.jwt.claims', '', true);         -- act as the system, not as a signed-in user
   perform set_config('request.jwt.claim.sub', '', true);
+  -- Revoke EVERY active SA in one statement (other environments' real SA rows included): the AFTER
+  -- trigger must refuse the whole statement, so nothing changes — and the test transaction rolls back.
   begin
-    update app.user_roles set revoked_at = now() where user_id = (select app_id from fx where n = 'sa') and role = 'SA';
+    update app.user_roles set revoked_at = now() where role = 'SA' and revoked_at is null;
     e := 'no error';
   exception when others then e := sqlerrm; end;
   perform pg_temp.r('I1 last active SA cannot be revoked', e like '%PRET-ADM-LAST-SA%', e);

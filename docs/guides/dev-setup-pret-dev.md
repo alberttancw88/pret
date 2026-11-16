@@ -29,7 +29,7 @@ only into `.env.local`.
    Supabase email is rate-limited but fine for a few dev invites.
 
 ## D. First Super Admin
-9. **Authentication → Users → Add user → Create new user** with your work email (tick
+9. ✅ **Done 16/11/2026 — Albert is Super Admin.** **Authentication → Users → Add user → Create new user** with your work email (tick
    *Auto confirm*), then tell the Delivery Lead. The Delivery Lead runs
    `private.bootstrap_super_admin(…)` on pret-dev to make that login the first Super Admin.
    On first sign-in PRET will ask you to set up the authenticator app (MFA).

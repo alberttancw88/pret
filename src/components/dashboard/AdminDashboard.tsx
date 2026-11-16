@@ -115,7 +115,7 @@ export default function AdminDashboard({ data, placeholder }: { data: AdminDashb
           <KpiTile
             label={`PH calendar ${hr.phYear}`}
             tone={hr.phStatus === 'Published' ? 'success' : 'warning'}
-            href="/admin/organisation/public-holidays"
+            href="/organisation/holidays"
             subLine={`Publish by 31/12/${hr.phYear - 1}`}
           >
             <Box sx={{ mt: 1 }}>

@@ -222,6 +222,8 @@ const SET_TITLES: Record<StatusSet, string> = {
   import: 'Import jobs',
   user: 'Users',
   phCalendar: 'PH calendar year',
+  active: 'Master data active flag',
+  accessReview: 'Access review month',
   payslip: 'Payslip (R1.1)',
   eaForm: 'EA form (R1.1)',
   statutoryTable: 'Statutory table (R1.1)',

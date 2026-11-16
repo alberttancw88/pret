@@ -108,6 +108,8 @@ export type ListPageProps<R> = {
   selected?: string[];
   onSelectedChange?: (ids: string[]) => void;
   bulkActions?: React.ReactNode;
+  /** Replaces the table card + pagination (e.g. a calendar view under the same filters). */
+  bodyOverride?: React.ReactNode;
 };
 
 const ROWS_PER_PAGE = [10, 25, 50, 100];
@@ -149,6 +151,7 @@ export default function ListPage<R>(props: ListPageProps<R>) {
     selected = [],
     onSelectedChange,
     bulkActions,
+    bodyOverride,
   } = props;
 
   const theme = useTheme();
@@ -558,7 +561,9 @@ export default function ListPage<R>(props: ListPageProps<R>) {
     <Stack spacing={2}>
       {filterArea}
 
-      {phone ? (
+      {bodyOverride !== undefined ? (
+        bodyOverride
+      ) : phone ? (
         <Box>
           {loading === 'refresh' && <LinearProgress aria-label="Loading" sx={{ mb: 1 }} />}
           {body}

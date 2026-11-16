@@ -9,6 +9,30 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.2] — 2026-11-16 — W2-002 Organisation setup + Users & access built
+### Added
+- Organisation (M5, ADM/SA): company profile and statutory employer numbers, departments,
+  positions, grades, work locations, working-week patterns (versioned, ≥ 1 rest day),
+  public-holiday calendars (replacement holidays, company/special holidays, copy to next year,
+  publish checks), cost centres, employee groups, system settings.
+- Users & access (M6): user list, invite external administrator, assign/revoke Admin and
+  Super Admin, access window, deactivate/reactivate/unlock, password and MFA reset, login
+  history, role permission reference, audit & access log viewer (SA, masked values with
+  logged reveal), monthly access review, company privacy notice.
+- Shared contract `src/server/contracts/` (zod schemas, types, function register) used by
+  both lanes; queries and Server Actions with role checks, audit and access logging.
+- Database: 6 migrations on `pret-dev` (18 tables, RLS forced on all), guards for self-role
+  changes, last Super Admin, rest days, unique codes; synthetic sample seed.
+- Tests: W2-002 role matrix 91/91, foundation 86/86, unit 40/40.
+- Invitation emails via Resend (`RESEND_API_KEY`, `PRET_EMAIL_FROM` in `.env.example`).
+- Pret-dev setup progress: database CA cert installed, first Super Admin bootstrapped.
+### Deferred
+- To W2-003: department head, reporting lines, employee-user invite, auto-deactivate
+  leavers, privacy A12–A14. Import of GL list and holidays with M9. All-users privacy-notice
+  page (S-GL-09).
+### Known gaps
+- Not yet exercised in a browser (waits on the remaining pret-dev setup steps).
+
 ## [0.2.1] — 2026-11-16 — W2-001 Foundation built
 ### Added
 - Next.js 15 + React 19 scaffold; MUI 7 theme (Inter, `#5A5FF2` primary, dd/mm/yyyy

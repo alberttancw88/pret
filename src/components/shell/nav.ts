@@ -231,14 +231,16 @@ export function buildNav(user: ShellUser): NavSection[] {
         label: 'Organisation',
         icon: 'organisation',
         children: [
-          { id: 'org-company', label: 'Company profile', href: '/admin/organisation/company' },
-          { id: 'org-departments', label: 'Departments', href: '/admin/organisation/departments' },
-          { id: 'org-positions', label: 'Positions', href: '/admin/organisation/positions' },
-          { id: 'org-grades', label: 'Grades', href: '/admin/organisation/grades' },
-          { id: 'org-locations', label: 'Work locations', href: '/admin/organisation/locations' },
-          { id: 'org-patterns', label: 'Working patterns', href: '/admin/organisation/working-patterns' },
-          { id: 'org-holidays', label: 'Public holidays', href: '/admin/organisation/public-holidays' },
-          { id: 'org-lines', label: 'Reporting lines', href: '/admin/organisation/reporting-lines' },
+          { id: 'org-company', label: 'Company profile', href: '/organisation/company' },
+          { id: 'org-departments', label: 'Departments', href: '/organisation/departments' },
+          { id: 'org-positions', label: 'Positions', href: '/organisation/positions' },
+          { id: 'org-grades', label: 'Grades', href: '/organisation/grades' },
+          { id: 'org-locations', label: 'Work locations', href: '/organisation/locations' },
+          { id: 'org-patterns', label: 'Working patterns', href: '/organisation/working-patterns' },
+          { id: 'org-holidays', label: 'Public holidays', href: '/organisation/holidays' },
+          { id: 'org-lines', label: 'Reporting lines', href: '/organisation/reporting-lines' },
+          { id: 'org-cost-centres', label: 'Cost centres', href: '/organisation/cost-centres' },
+          { id: 'org-groups', label: 'Employee groups', href: '/organisation/groups' },
         ],
       },
       { id: 'reports', label: 'Reports', icon: 'reports', href: '/admin/reports' },
@@ -260,15 +262,17 @@ export function buildNav(user: ShellUser): NavSection[] {
         id: 'users',
         label: 'Users & access',
         icon: 'users',
+        // ADM sees employee users without privileged roles only (BR-ADM-01); the employee-user
+        // invite arrives with employee records (W2-003), so ADM has no invite entry yet.
         children: sa
           ? [
-              { id: 'ac-users', label: 'Users', href: '/admin/access/users' },
-              { id: 'ac-invite-ext', label: 'Invite external administrator', href: '/admin/access/users/invite-external' },
-              { id: 'ac-roles', label: 'Role reference', href: '/admin/access/roles' },
+              { id: 'ac-users', label: 'Users', href: '/users' },
+              { id: 'ac-invite-ext', label: 'Invite external administrator', href: '/users/new?type=external' },
+              { id: 'ac-roles', label: 'Role reference', href: '/users/roles' },
             ]
           : [
-              { id: 'ac-users', label: 'Users', href: '/admin/access/users' },
-              { id: 'ac-roles', label: 'Role reference', href: '/admin/access/roles' },
+              { id: 'ac-users', label: 'Users', href: '/users' },
+              { id: 'ac-roles', label: 'Role reference', href: '/users/roles' },
             ],
       },
       sa
@@ -277,14 +281,14 @@ export function buildNav(user: ShellUser): NavSection[] {
             label: 'Audit & privacy',
             icon: 'privacy',
             children: [
-              { id: 'pr-audit', label: 'Audit & access log', href: '/admin/privacy/audit' },
-              { id: 'pr-review', label: 'Access review', href: '/admin/privacy/access-review' },
-              { id: 'pr-notice', label: 'Privacy notice', href: '/admin/privacy/notice' },
-              { id: 'pr-dsr', label: 'Data-subject requests', href: '/admin/privacy/dsr' },
-              { id: 'pr-breach', label: 'Breach & incidents', href: '/admin/privacy/breaches' },
-              { id: 'pr-retention', label: 'Retention & anonymisation', href: '/admin/privacy/retention' },
-              { id: 'pr-ntf-log', label: 'Notification log', href: '/admin/privacy/notification-log' },
-              { id: 'pr-templates', label: 'Notification templates', href: '/admin/privacy/notification-templates' },
+              { id: 'pr-audit', label: 'Audit & access log', href: '/audit' },
+              { id: 'pr-review', label: 'Access review', href: '/audit/access-review' },
+              { id: 'pr-notice', label: 'Privacy notice', href: '/privacy/notice' },
+              { id: 'pr-dsr', label: 'Data-subject requests', href: '/privacy/dsr' },
+              { id: 'pr-breach', label: 'Breach & incidents', href: '/privacy/incidents' },
+              { id: 'pr-retention', label: 'Retention & anonymisation', href: '/privacy/retention' },
+              { id: 'pr-ntf-log', label: 'Notification log', href: '/notifications/log' },
+              { id: 'pr-templates', label: 'Notification templates', href: '/notifications/templates' },
             ],
           }
         : {
@@ -292,12 +296,12 @@ export function buildNav(user: ShellUser): NavSection[] {
             label: 'Privacy & logs',
             icon: 'privacy',
             children: [
-              { id: 'pr-notice', label: 'Privacy notice', href: '/admin/privacy/notice' },
-              { id: 'pr-dsr', label: 'Data-subject requests', href: '/admin/privacy/dsr' },
-              { id: 'pr-ntf-log', label: 'Notification log', href: '/admin/privacy/notification-log' },
+              { id: 'pr-notice', label: 'Privacy notice', href: '/privacy/notice' },
+              { id: 'pr-dsr', label: 'Data-subject requests', href: '/privacy/dsr' },
+              { id: 'pr-ntf-log', label: 'Notification log', href: '/notifications/log' },
             ],
           },
-      { id: 'settings', label: 'Settings', icon: 'settings', href: '/admin/settings' },
+      { id: 'settings', label: 'Settings', icon: 'settings', href: '/settings' },
     ];
     sections.push({ id: 'system', heading: 'System', items: system });
   }

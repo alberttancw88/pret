@@ -29,4 +29,8 @@ export const env = {
   /** Alternative: path to the CA file (e.g. downloaded from Dashboard → Database → SSL). */
   databaseCaCertFile: () => optional('DATABASE_CA_CERT_FILE'),
   appUrl: () => optional('PRET_APP_URL'),
+  /** Transactional email (Resend). When absent, emails are not sent and callers degrade gracefully (W2-002). */
+  resendApiKey: () => optional('RESEND_API_KEY'),
+  /** Sender, e.g. 'PRET <no-reply@example.com>'. Required together with RESEND_API_KEY. */
+  emailFrom: () => optional('PRET_EMAIL_FROM'),
 };

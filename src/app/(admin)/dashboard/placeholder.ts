@@ -15,8 +15,8 @@ export const ADMIN_DASHBOARD_PLACEHOLDER: Omit<AdminDashboardData, 'asAt'> = {
     phStatus: 'Draft',
   },
   alerts: [
-    { message: '2 reportees without an active manager', href: '/admin/organisation/reporting-lines' },
-    { message: 'External access ends in 7 days', href: '/admin/access/users' },
+    { message: '2 reportees without an active manager', href: '/organisation/reporting-lines' },
+    { message: 'External access ends in 7 days', href: '/users' },
   ],
   claims: {
     submitted: 6,

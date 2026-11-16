@@ -122,6 +122,15 @@ export const STATUS_MAP = {
     Draft: o('warning'),
     Published: f('success'),
   },
+  /** Master-data Active flag (organisation lists, W2-002). */
+  active: {
+    Active: f('success'),
+    Inactive: o('grey'),
+  },
+  accessReview: {
+    'Not reviewed': o('warning'),
+    Reviewed: f('success'),
+  },
   payslip: {
     'Not generated': o('grey'),
     Generated: f('info'),

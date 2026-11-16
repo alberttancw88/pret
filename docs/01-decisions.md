@@ -65,3 +65,9 @@ Tracked in `docs/product/PRD.md` → "Open Questions for Albert" once Gate-1 art
 | D23 | Cheque/cash payees | ✅ Shown in a separate "Pay by cheque/cash" section of the claims batch, excluded from the HLB list (UXQ-06). |
 | D24 | Visual | ✅ Buttons/active nav `#5A5FF2` (AA); brand `#666CFF` for accents; light mode only; phone bottom bar. Logo SVG + "i" mark **to be supplied by Albert**. |
 | D25 | Supabase org | ✅ PRET projects live in the existing Supabase organisation ("Interact Direct Order"). Dev project `pret-dev`, Singapore, free plan. Production project (Pro, D20) created at Wave 4. |
+
+## Decided by Albert during Wave 2 (2026-11-17)
+
+| # | Area | Decision |
+|---|------|----------|
+| D26 | Hosting plan | ✅ PRET is hosted on **Vercel Hobby**, including the live (production) version, because Interact has very few employees. *Supersedes the "Vercel Pro" part of D20; Supabase Pro for production is unchanged.* PRET runs on Vercel, not localhost. Albert accepts the trade-offs: Vercel's Hobby terms are for non-commercial use, Hobby has a single account owner (no team seats), and there is no Vercel support SLA. Revisit if Vercel objects or usage grows. |

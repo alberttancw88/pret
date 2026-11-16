@@ -9,6 +9,20 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.3] — 2026-11-17 — MFA enrol fix, dev setup complete, Vercel ready
+### Fixed
+- Admin or Super Admin without an authenticator was sent to the code-entry screen instead of
+  the QR enrolment screen; `/mfa` now enrols whenever no factor exists.
+### Added
+- Decision D26: PRET hosted on Vercel Hobby, including the live version (replaces Vercel Pro
+  in D20).
+- Vercel deployment prep: database CA cert can be supplied as base64 in `DATABASE_CA_CERT`.
+### Changed
+- Dev setup guide: CA cert, secret key, Data API off and first Super Admin marked done.
+- First browser sign-in verified (Super Admin, MFA aal2).
+### Known gaps
+- Password-reset sign-in does not write a login-history row (for GATE 3).
+
 ## [0.2.2] — 2026-11-16 — W2-002 Organisation setup + Users & access built
 ### Added
 - Organisation (M5, ADM/SA): company profile and statutory employer numbers, departments,

@@ -99,7 +99,7 @@ export async function getUserContext(): Promise<{ user: CurrentUser; ctx: UserTx
   return r ? { user: r.user, ctx: r.ctx, accessToken: r.accessToken } : null;
 }
 
-async function hasEnrolledFactor(): Promise<boolean> {
+export async function hasEnrolledFactor(): Promise<boolean> {
   try {
     const supabase = await createSupabaseServerClient();
     const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();

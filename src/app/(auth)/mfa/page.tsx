@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/server/auth/current-user';
+import { getCurrentUser, hasEnrolledFactor } from '@/server/auth/current-user';
 import MfaForm from '@/components/auth/MfaForm';
 import { safeNext } from '@/components/auth/types';
 import { isAdmin } from '@/components/shell/nav';
@@ -16,5 +16,8 @@ export default async function MfaPage({ searchParams }: { searchParams: Promise<
   const user = await getCurrentUser();
   if (!user) redirect(n ? `/login?next=${encodeURIComponent(n)}` : '/login');
   if (user.mfaVerified || !isAdmin(user)) redirect(n ? `/?next=${encodeURIComponent(n)}` : '/');
-  return <MfaForm mode={mode === 'enrol' ? 'enrol' : 'verify'} next={n} />;
+  // Decide from the account, not only the URL: any route may send an un-enrolled user to
+  // plain /mfa (e.g. "/" after first sign-in), and "verify" without a factor is a dead end.
+  const enrolled = await hasEnrolledFactor();
+  return <MfaForm mode={mode === 'enrol' || !enrolled ? 'enrol' : 'verify'} next={n} />;
 }

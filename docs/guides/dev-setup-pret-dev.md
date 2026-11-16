@@ -9,11 +9,11 @@ only into `.env.local`.
    Configuration → Download certificate**. Save it as `private/supabase-ca.crt` inside the HRMS
    folder (the `private/` folder is git-ignored), then add to `.env.local`:
    `DATABASE_CA_CERT_FILE=private/supabase-ca.crt`
-2. **Secret API key** — **Project Settings → API Keys → Secret keys** → copy the `sb_secret_…`
+2. ✅ **Done 16/11/2026 (verified against Auth admin API).** **Secret API key** — **Project Settings → API Keys → Secret keys** → copy the `sb_secret_…`
    key into `.env.local` as `SUPABASE_SECRET_KEY=`. Server-only; used for accepting invitations.
 
 ## B. Data API off (ADR-0002, D18)
-3. **Project Settings → Data API** → turn the Data API **off** (or remove `public` and
+3. ✅ **Done 16/11/2026 (REST/GraphQL serve no data; verified).** **Project Settings → Data API** → turn the Data API **off** (or remove `public` and
    `graphql_public` from *Exposed schemas*). PRET's server talks to Postgres directly.
 
 ## C. Authentication settings (ADR-0014)

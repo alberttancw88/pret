@@ -9,6 +9,19 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.4] — 2026-11-19 — PRET live on Vercel
+### Added
+- Decision D27: Supabase and Vercel on free tiers only, for dev and the live version
+  (replaces the Pro plans in D20/D25); PRET's own backup job becomes mandatory before go-live.
+### Changed
+- PRET deployed to https://pret-zeta.vercel.app (Vercel Hobby, Singapore) from `main`;
+  Vercel project re-linked to `alberttancw88/pret`; Supabase Auth Site URL and redirect URLs
+  set for the live address. First live sign-in with MFA verified.
+- Backlog log: Vercel setup, environment-variable mix-up and clean-up, MFA re-enrolment.
+### Known gaps
+- Security headers (CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) not yet
+  set (for GATE 3). 600-second session expiry not yet verified.
+
 ## [0.2.3] — 2026-11-17 — MFA enrol fix, dev setup complete, Vercel ready
 ### Fixed
 - Admin or Super Admin without an authenticator was sent to the code-entry screen instead of

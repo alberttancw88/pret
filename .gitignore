@@ -37,3 +37,7 @@ yarn-error.log*
 .claude/settings.local.json
 .claude/worktrees/
 .claude/launch.json
+
+# Personal account recovery codes / credentials — never commit
+vercel/
+*recovery-codes*

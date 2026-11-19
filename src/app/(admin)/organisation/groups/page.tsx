@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { requireUser } from '@/server/auth/current-user';
-import { getEmployeeGroup, listEmployeeGroups } from '@/server/queries/org';
+import { getEmployeeGroup, getOrgOptions, listEmployeeGroups } from '@/server/queries/org';
 import type { GroupListParams } from '@/server/contracts/org';
 import EmployeeGroupsList from '@/components/org/EmployeeGroupsList';
 import { GROUP_FILTERS, isUuid } from '@/components/org/filters';
@@ -17,6 +17,6 @@ export default async function EmployeeGroupsPage({ searchParams }: { searchParam
   const lp = readListParams(sp, { filters: GROUP_FILTERS, sort: { key: 'name', direction: 'asc' } });
   const params: GroupListParams = { ...toPageParams(lp, ['name'] as const), active: activeParam(lp.filters.active) };
   const editId = spValue(sp, 'edit');
-  const [list, detail] = await Promise.all([listEmployeeGroups(params), isUuid(editId) ? getEmployeeGroup(editId) : Promise.resolve(null)]);
-  return <EmployeeGroupsList rows={list.rows} total={list.total} params={params} detail={detail} />;
+  const [list, detail, options] = await Promise.all([listEmployeeGroups(params), isUuid(editId) ? getEmployeeGroup(editId) : Promise.resolve(null), getOrgOptions()]);
+  return <EmployeeGroupsList rows={list.rows} total={list.total} params={params} detail={detail} options={options} />;
 }

@@ -193,7 +193,7 @@ function ManagerPanel({ m }: { m: NonNullable<HomeData['manager']> }) {
     { label: 'Approvals waiting', value: m.approvals, href: '/approvals', accent: m.approvals > 0 ? '#5A5FF2' : '#8F95A3' },
     { label: 'Team on leave today', value: m.onLeaveToday, href: '/team/leave?when=today', accent: '#8F95A3' },
     { label: 'Team on leave this week', value: m.onLeaveWeek, href: '/team/leave?when=week', accent: '#8F95A3' },
-    { label: 'Probation due in team', value: m.probationDue, href: '/team/members?probation=due', accent: m.probationDue > 0 ? '#B45309' : '#8F95A3' },
+    { label: 'Probation due in team', value: m.probationDue, href: '/team', accent: m.probationDue > 0 ? '#B45309' : '#8F95A3' },
     { label: 'Team claims submitted', value: m.teamClaimsSubmitted, href: '/team/claims?status=Submitted', accent: '#8F95A3' },
   ];
   return (

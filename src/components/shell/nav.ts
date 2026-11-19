@@ -129,10 +129,10 @@ export function buildNav(user: ShellUser): NavSection[] {
       label: 'My Profile',
       icon: 'profile',
       children: [
-        { id: 'profile', label: 'Profile', href: '/profile' },
-        { id: 'profile-crs', label: 'Change requests', href: '/profile/change-requests' },
-        { id: 'profile-docs', label: 'Documents', href: '/profile/documents' },
-        { id: 'profile-data', label: 'Download my data', href: '/profile/my-data' },
+        { id: 'profile', label: 'Profile', href: '/my/profile' },
+        { id: 'profile-crs', label: 'Change requests', href: '/my/profile/change-requests' },
+        { id: 'profile-docs', label: 'Documents', href: '/my/documents' },
+        { id: 'profile-data', label: 'Download my data', href: '/my/data-export' },
       ],
     });
   }
@@ -156,7 +156,7 @@ export function buildNav(user: ShellUser): NavSection[] {
       label: 'My Team',
       icon: 'team',
       children: [
-        { id: 'team-members', label: 'Team members', href: '/team/members' },
+        { id: 'team-members', label: 'Team members', href: '/team' },
         { id: 'team-leave', label: 'Team leave', href: '/team/leave' },
         { id: 'team-balances', label: 'Team balances', href: '/team/balances' },
         { id: 'team-claims', label: 'Team claims', href: '/team/claims' },
@@ -174,9 +174,9 @@ export function buildNav(user: ShellUser): NavSection[] {
         label: 'Employees',
         icon: 'employees',
         children: [
-          { id: 'emp-all', label: 'All employees', href: '/admin/employees' },
-          { id: 'emp-crs', label: 'Change requests', href: '/admin/employees/change-requests', badge: 'changeRequests' },
-          { id: 'emp-bulk', label: 'Bulk update', href: '/admin/employees/bulk-update' },
+          { id: 'emp-all', label: 'All employees', href: '/employees' },
+          { id: 'emp-crs', label: 'Change requests', href: '/employees/change-requests', badge: 'changeRequests' },
+          { id: 'emp-bulk', label: 'Bulk update', href: '/employees/bulk-update' },
         ],
       },
       {
@@ -262,16 +262,18 @@ export function buildNav(user: ShellUser): NavSection[] {
         id: 'users',
         label: 'Users & access',
         icon: 'users',
-        // ADM sees employee users without privileged roles only (BR-ADM-01); the employee-user
-        // invite arrives with employee records (W2-003), so ADM has no invite entry yet.
+        // ADM sees employee users without privileged roles only (BR-ADM-01) and may invite
+        // employee users (A6 employee branch, W2-003); SA also invites external administrators.
         children: sa
           ? [
               { id: 'ac-users', label: 'Users', href: '/users' },
+              { id: 'ac-invite', label: 'Invite employee user', href: '/users/new?type=employee' },
               { id: 'ac-invite-ext', label: 'Invite external administrator', href: '/users/new?type=external' },
               { id: 'ac-roles', label: 'Role reference', href: '/users/roles' },
             ]
           : [
               { id: 'ac-users', label: 'Users', href: '/users' },
+              { id: 'ac-invite', label: 'Invite employee user', href: '/users/new?type=employee' },
               { id: 'ac-roles', label: 'Role reference', href: '/users/roles' },
             ],
       },

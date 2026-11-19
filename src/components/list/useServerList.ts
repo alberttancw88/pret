@@ -10,7 +10,7 @@ import type { SortState } from './ListPage';
 import { csvFileName, downloadCsv, toCsv, type CsvColumn } from './csv';
 import type { ListColumn } from './ListPage';
 
-export function useServerList<F extends Record<string, string>>(defaults: { filters: F; rowsPerPage?: number; sort?: SortState }) {
+export function useServerList<F extends Record<string, string>>(defaults: { filters: F; rowsPerPage?: number; sort?: SortState; preserve?: string[] }) {
   const lp = useListParams(defaults);
   const [pending, startTransition] = React.useTransition();
   const wrap =

@@ -100,7 +100,7 @@ export default function AdminDashboard({ data, placeholder }: { data: AdminDashb
 
       <DashboardSection title="HR">
         <Box sx={GRID_SX}>
-          <KpiTile label="Active headcount" value={hr.headcount} tone="indigo" href="/admin/employees?status=active" />
+          <KpiTile label="Active headcount" value={hr.headcount} tone="indigo" href="/employees" />
           <KpiTile label="On leave today" value={hr.onLeaveToday} tone="info" href="/admin/leave/calendar?when=today" />
           <KpiTile
             label="Pending leave approvals"
@@ -109,9 +109,9 @@ export default function AdminDashboard({ data, placeholder }: { data: AdminDashb
             tone={amberIf(hr.pendingLeave)}
             href="/approvals?tab=leave"
           />
-          <KpiTile label="Probation ending ≤ 30 days" value={hr.probationDue} tone={amberIf(hr.probationDue)} href="/admin/employees?probation=due" />
+          <KpiTile label="Probation ending ≤ 30 days" value={hr.probationDue} tone={amberIf(hr.probationDue)} href="/employees?probationEndingWithin=30" />
           <KpiTile label="Missing payroll data" value={hr.missingPayroll} tone={amberIf(hr.missingPayroll)} href="/admin/reports/missing-payroll-data" />
-          <KpiTile label="Change requests" value={hr.changeRequests} tone={amberIf(hr.changeRequests)} href="/admin/employees/change-requests" />
+          <KpiTile label="Change requests" value={hr.changeRequests} tone={amberIf(hr.changeRequests)} href="/employees/change-requests" />
           <KpiTile
             label={`PH calendar ${hr.phYear}`}
             tone={hr.phStatus === 'Published' ? 'success' : 'warning'}

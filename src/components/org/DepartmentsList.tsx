@@ -3,7 +3,7 @@
 // O2 · Departments — S-OR-02 · /organisation/departments · F-ORG-02 · US-ORG-002.
 // List: Search code/name · Filters Active, Parent · Columns Code › · Name · Parent · Head ·
 // Active headcount · Active ● · ⋮ Edit / Deactivate. Form: Code * (unique, 10) · Name * (80) ·
-// Parent department (no cycles) · Head of department (active employee — after W2-003) ·
+// Parent department (no cycles) · Head of department (active employee, W2-003) ·
 // Cost centre · Active *. Deactivate blocked with active employees: "Move {n} employees first."
 import * as React from 'react';
 import type { DepartmentDetail, DepartmentListParams, DepartmentRow, OrgOptions } from '@/server/contracts/org';
@@ -14,9 +14,10 @@ import type { ListColumn } from '../list/ListPage';
 import { FormGrid, SelectInput, SwitchInput, TextInput } from '../forms/fields';
 import MasterList, { csvResult } from './MasterList';
 import { DEPARTMENT_FILTERS } from './filters';
+import EmployeePicker, { type PickedEmployee } from '../employees/EmployeePicker';
 import { ACTIVE_FILTER_OPTIONS, activeLabel, countOrDash, orgFilterOptions, orgOptions, stampsMeta } from './common';
 
-type FormValue = { code: string; name: string; parentId: string; costCentreId: string; isActive: boolean };
+type FormValue = { code: string; name: string; parentId: string; head: PickedEmployee | null; costCentreId: string; isActive: boolean };
 
 export default function DepartmentsList({
   rows,
@@ -67,8 +68,8 @@ export default function DepartmentsList({
       canEdit
       addLabel="Add new department"
       formTitle={(d) => (d ? `Edit department ${d.code}` : 'New department')}
-      emptyForm={() => ({ code: '', name: '', parentId: '', costCentreId: '', isActive: true })}
-      toForm={(d) => ({ code: d.code, name: d.name, parentId: d.parentId ?? '', costCentreId: d.costCentreId ?? '', isActive: d.isActive })}
+      emptyForm={() => ({ code: '', name: '', parentId: '', head: null, costCentreId: '', isActive: true })}
+      toForm={(d) => ({ code: d.code, name: d.name, parentId: d.parentId ?? '', head: d.headEmployeeId ? { id: d.headEmployeeId, employeeNo: '', name: d.headName ?? 'Current head' } : null, costCentreId: d.costCentreId ?? '', isActive: d.isActive })}
       fieldLabels={{ code: 'Code', name: 'Name', parentId: 'Parent department', costCentreId: 'Cost centre', headEmployeeId: 'Head of department', isActive: 'Active' }}
       validate={(v) => {
         const e: Record<string, string> = {};
@@ -77,7 +78,7 @@ export default function DepartmentsList({
         return e;
       }}
       onSave={(v, d) => {
-        const input = { code: v.code, name: v.name, parentId: v.parentId || null, headEmployeeId: d?.headEmployeeId ?? null, costCentreId: v.costCentreId || null, isActive: v.isActive };
+        const input = { code: v.code, name: v.name, parentId: v.parentId || null, headEmployeeId: v.head?.id ?? null, costCentreId: v.costCentreId || null, isActive: v.isActive };
         return d ? updateDepartment({ ...input, id: d.id }) : createDepartment(input);
       }}
       savedMessage={(v) => `Department ${v.code.trim().toUpperCase()} saved.`}
@@ -103,14 +104,12 @@ export default function DepartmentsList({
             error={errors.parentId}
             helper="A department can't sit under itself or one of its own sub-departments."
           />
-          <SelectInput
+          <EmployeePicker
             label="Head of department"
-            value=""
-            onChange={() => undefined}
-            options={[]}
-            disabled
+            value={value.head}
+            onChange={(v) => set('head', v)}
             error={errors.headEmployeeId}
-            helper="Available after employee records are added."
+            helper="An active employee (optional)."
           />
           <SelectInput
             label="Cost centre"

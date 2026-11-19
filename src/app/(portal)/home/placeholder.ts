@@ -15,7 +15,7 @@ export function homePlaceholder(isManager: boolean): HomeData {
     pendingItems: [
       { ref: 'LV-2026-00012', href: '/leave/applications/LV-2026-00012', label: 'Annual leave · 2.0 days', set: 'leave', status: 'Pending L1' },
       { ref: 'CL-2026-00031', href: '/claims/CL-2026-00031', label: 'Sample client visit', set: 'claim', status: 'Submitted' },
-      { ref: 'CR-2026-00004', href: '/profile/change-requests/CR-2026-00004', label: 'Bank details', set: 'changeRequest', status: 'Submitted' },
+      { ref: 'CR-2026-00004', href: '/my/profile/change-requests/CR-2026-00004', label: 'Bank details', set: 'changeRequest', status: 'Submitted' },
     ],
     upcomingLeave: [
       { id: 'u1', type: 'Annual', colorIndex: 0, from: '2026-12-24', to: '2026-12-26', days: 2.0 },

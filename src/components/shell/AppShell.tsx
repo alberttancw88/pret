@@ -199,7 +199,7 @@ function ShellFrame({
     { value: 'claims', label: 'Claims', href: '/claims', icon: ReceiptLongOutlinedIcon, match: ['/claims'] },
     canApprove
       ? { value: 'approvals', label: 'Approvals', href: '/approvals', icon: TaskAltOutlinedIcon, match: ['/approvals'], badge: badges.approvals ?? 0 }
-      : { value: 'profile', label: 'Profile', href: '/profile', icon: PersonOutlineIcon, match: ['/profile'] },
+      : { value: 'profile', label: 'Profile', href: '/my/profile', icon: PersonOutlineIcon, match: ['/my'] },
   ];
   const bottomValue =
     bottomItems.find((b) => b.match.some((m) => pathname === m || pathname.startsWith(m + '/')))?.value ?? (mobileOpen ? 'more' : false);

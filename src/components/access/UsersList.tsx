@@ -130,7 +130,7 @@ export default function UsersList({
           }
         }}
         exportSensitive
-        addNew={isSuperAdmin ? { label: 'Invite user', href: '/users/new' } : undefined}
+        addNew={{ label: 'Invite user', href: '/users/new' }}
         columns={columns}
         rows={rows}
         total={total}

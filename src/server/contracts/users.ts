@@ -5,7 +5,7 @@
 // Scope rules (BR-ADM-01, D11): SA manages everyone; ADM sees and manages only EMPLOYEE users
 // holding no privileged role (enforced by requireUser + RLS + DB guards). Nobody changes their
 // own roles/status; the last active Super Admin cannot be revoked or disabled (EC-ADM-01).
-// Employee-user invites need employee records → W2-003 (the action returns a clear failure).
+// Employee-user invites (A6 employee branch, F-ADM-02) work from W2-003: U4 picker = listInvitableEmployees().
 import { z } from 'zod';
 import {
   booleanSchema, isoDateSchema, multi, optionalText, pageParamsSchema, requiredText, uuidSchema,
@@ -160,7 +160,7 @@ export type InviteUserInput = z.input<typeof inviteUserSchema>;
 /** emailSent false = account + invitation created but the email could not be sent (e.g. email not configured): use RESEND INVITE later. */
 export type InviteUserResult = { userId: string; emailSent: boolean; expiresAt: string; message: string };
 
-/** Employees without a user account, for the U4 picker — always [] with available=false until W2-003. */
+/** Employees without a user account (Pending Join / On Probation / Confirmed / Notice Period), for the U4 picker (W2-003). */
 export type InvitableEmployee = { employeeId: string; employeeNo: string; name: string; workEmail: string; suggestedDisplayName: string; joinDate: string | null };
 export type InvitableEmployees = { available: boolean; message: string | null; rows: InvitableEmployee[] };
 
@@ -348,7 +348,7 @@ export type RequestPrivacyNoticeUploadInput = z.input<typeof requestPrivacyNotic
 //   listUsers(p: UserListParams): Promise<Paged<UserRow>>                               [ADM (scope), SA]
 //   getUser(id: string): Promise<UserDetail | null>                                     [ADM (scope), SA]
 //   listUserLoginHistory(p: LoginHistoryParams): Promise<Paged<LoginEventRow>>          [SA]
-//   listInvitableEmployees(): Promise<InvitableEmployees>                               [ADM, SA]  (W2-003)
+//   listInvitableEmployees(): Promise<InvitableEmployees>                               [ADM, SA]  (available from W2-003)
 //   getRolePermissionMatrix(): Promise<{ roles: typeof ROLE_DESCRIPTIONS; rows: RolePermissionRow[]; legend: string }>  [ADM, SA]
 //   getCurrentPrivacyNotice(): Promise<PrivacyNotice | null>                            [any signed-in user]
 //   listPrivacyNoticeHistory(): Promise<PrivacyNotice[]>                                [any signed-in user] (S-GL-09 shows history to all)
@@ -359,7 +359,7 @@ export type RequestPrivacyNoticeUploadInput = z.input<typeof requestPrivacyNotic
 //   getAccessReview(month: string): Promise<AccessReview>                               [SA]
 //
 // SERVER ACTIONS — src/server/actions/users.ts ('use server')
-//   A6  inviteUser(i: InviteUserInput): Promise<ActionResult<InviteUserResult>>   external: [SA]; employee: [ADM, SA] → fails until W2-003
+//   A6  inviteUser(i: InviteUserInput): Promise<ActionResult<InviteUserResult>>   external: [SA]; employee: [ADM, SA] (W2-003; login email = work email; scheduled → sent by the daily invite job)
 //   A7  resendInvite(i: UserIdInput): Promise<ActionResult<InviteUserResult>>                         [ADM (scope), SA]
 //       saveUserRoles(i: SaveUserRolesInput): Promise<ActionResult<SaveUserRolesResult>>              [SA]
 //       updateUserAccount(i: UpdateUserAccountInput): Promise<ActionResult>                           [SA]

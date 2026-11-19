@@ -40,14 +40,24 @@ const USER_SORT: Record<string, string> = {
   lastLogin: 'x.last_login_at', accessEnd: 'x.access_end_date',
 };
 
-function mapUser(r: UserDb & { eff_status: UserStatus }, reportees: Map<string, number>): UserRow {
+function mapUser(r: UserDb & { eff_status: UserStatus }, reportees: Map<string, number>, emps: Map<string, { no: string; name: string }> = new Map()): UserRow {
+  const emp = r.employee_id ? emps.get(r.employee_id) : undefined;
   return {
     id: r.id, displayName: r.display_name, loginEmail: r.login_email, userType: r.user_type, employeeId: r.employee_id,
-    employeeNo: null, employeeName: null, roles: r.roles,
+    employeeNo: emp?.no ?? null, employeeName: emp?.name ?? null, roles: r.roles,
     directReportees: r.employee_id ? reportees.get(r.employee_id) ?? 0 : 0,
     status: r.eff_status, lastLoginAt: iso(r.last_login_at), mfaEnrolled: r.mfa_enrolled,
     accessStartDate: r.access_start_date, accessEndDate: r.access_end_date, serviceProvider: r.service_provider,
   };
+}
+
+async function employeeLabels(tx: Tx, ids: (string | null)[]): Promise<Map<string, { no: string; name: string }>> {
+  const uniq = [...new Set(ids.filter((v): v is string => !!v))];
+  const m = new Map<string, { no: string; name: string }>();
+  if (!uniq.length) return m;
+  const r = await sql<{ id: string; employee_no: string; full_name: string }>`select id, employee_no, full_name from app.employee_names(${uniq}::uuid[])`.execute(tx);
+  for (const x of r.rows) m.set(x.id, { no: x.employee_no, name: x.full_name });
+  return m;
 }
 
 async function reporteeCounts(tx: Tx, employeeIds: (string | null)[]): Promise<Map<string, number>> {
@@ -78,7 +88,8 @@ export async function userRows(tx: Tx, params: UserListParams, all = false): Pro
      limit ${limit} offset ${offset}`.execute(tx);
   const total = (await sql<{ n: number }>`select count(*)::int as n from ${USER_FROM} where ${where}`.execute(tx)).rows[0]?.n ?? 0;
   const rc = await reporteeCounts(tx, rows.rows.map((r) => r.employee_id));
-  return { rows: rows.rows.map((r) => mapUser(r, rc)), total, page: all ? 1 : p.page, pageSize: all ? EXPORT_LIMIT : p.pageSize };
+  const emps = await employeeLabels(tx, rows.rows.map((r) => r.employee_id));
+  return { rows: rows.rows.map((r) => mapUser(r, rc, emps)), total, page: all ? 1 : p.page, pageSize: all ? EXPORT_LIMIT : p.pageSize };
 }
 
 export async function listUsers(params: UserListParams): Promise<Paged<UserRow>> {
@@ -104,6 +115,7 @@ export async function getUser(id: string): Promise<UserDetail | null> {
       : [];
     const names = await resolveNames(tx, [r.created_by, r.updated_by, r.invited_by, ...history.flatMap((h) => [h.granted_by, h.revoked_by])]);
     const rc = await reporteeCounts(tx, [r.employee_id]);
+    const emps = await employeeLabels(tx, [r.employee_id]);
     let invitation: UserInvitationInfo | null = null;
     if (inv) {
       const now = Date.now();
@@ -117,7 +129,7 @@ export async function getUser(id: string): Promise<UserDetail | null> {
     const locked = r.eff_status === 'locked' || r.raw_status === 'locked';
     const sysName = (id: string | null) => (id === SYSTEM_ACTOR_ID ? 'PRET System' : id ? names.get(id) ?? null : null);
     return {
-      ...mapUser(r, rc),
+      ...mapUser(r, rc, emps),
       failedLoginCount: r.failed_login_count, lockedUntil: iso(r.locked_until), disabledReason: r.disabled_reason,
       invitedAt: iso(r.invited_at), invitedByName: sysName(r.invited_by), invitation,
       roleHistory: history.map((h) => ({ role: h.role, grantedAt: iso(h.granted_at)!, grantedByName: sysName(h.granted_by), revokedAt: iso(h.revoked_at), revokedByName: sysName(h.revoked_by) })),
@@ -166,12 +178,24 @@ export async function listUserLoginHistory(params: LoginHistoryParams): Promise<
 }
 
 export async function listInvitableEmployees(): Promise<InvitableEmployees> {
-  await authorize(USER_ADMIN);
-  return {
-    available: false,
-    message: 'Employee users can be invited once employee records are available (W2-003). External administrators can be invited now.',
-    rows: [],
-  };
+  const { ctx } = await authorize(USER_ADMIN);
+  return withUserTx(ctx, async (tx) => {
+    // employee_portal_accounts sees every employee user (even ones an ADM cannot list), so linked employees never reappear
+    const r = await sql<{ id: string; employee_no: string; full_name: string; preferred_name: string | null; work_email: string; join_date: string }>`
+      select e.id, e.employee_no, e.full_name, e.preferred_name, e.work_email::text as work_email, e.join_date
+        from app.employees e
+       where e.status in ('pending_join','on_probation','confirmed','notice_period')
+         and not exists (select 1 from app.employee_portal_accounts(array[e.id]) pa)
+       order by e.full_name`.execute(tx);
+    return {
+      available: true, message: null,
+      rows: r.rows.map((x) => ({
+        employeeId: x.id, employeeNo: x.employee_no, name: x.full_name, workEmail: x.work_email,
+        suggestedDisplayName: x.preferred_name ? `${x.preferred_name} ${x.full_name.split(' ').slice(-1)[0] ?? ''}`.trim() : x.full_name,
+        joinDate: x.join_date,
+      })),
+    };
+  });
 }
 
 export async function getRolePermissionMatrix(): Promise<{ roles: typeof ROLE_DESCRIPTIONS; rows: RolePermissionRow[]; legend: string }> {

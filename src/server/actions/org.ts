@@ -25,13 +25,14 @@ import {
   updateHolidaySchema, updateLocationSchema, updatePositionSchema, updateWorkingPatternSchema,
   COMPULSORY_HOLIDAY_LABELS, DAY_TYPE_SHORT, HOLIDAY_TYPE_LABELS, MONTH_DAY_BASIS_LABELS, WEEKDAYS,
   type ActionResult, type CopyHolidaysResult, type CsvFile, type HolidayChangeResult, type PublishHolidayYearResult,
-  type UpdateLocationResult, type UploadIntent,
+  type UpdateLocationResult, type UploadIntent, reassignReporteesSchema, type ReassignReporteesResult,
 } from '../contracts/org';
 import { MY_STATE_LABELS } from '../contracts/common';
 import {
   copyPreview, costCentreRows, departmentRows, gradeRows, groupRows, holidayRows, holidayYearSummary, locationRows,
-  patternRows, positionRows,
+  patternRows, positionRows, reportingLines,
 } from '../queries/org';
+import { addManagerChange } from '../lib/job-changes';
 
 const ADMIN: Role[] = ['ADM', 'SA'];
 const SA: Role[] = ['SA'];
@@ -227,14 +228,11 @@ async function setActive(table: string, input: Input): Promise<ActionResult> {
 // ===========================================================================
 // O2 Departments
 // ===========================================================================
-const HEAD_LATER = 'Head of department can be set once employee records are available (W2-003).';
-
 export async function createDepartment(input: Input): Promise<ActionResult<{ id: string }>> {
   return runAction(ADMIN, departmentInputSchema, input, async (d, { ctx }) => {
-    if (d.headEmployeeId) return fail(HEAD_LATER, { headEmployeeId: HEAD_LATER });
     return withUserTx(ctx, async (tx) => {
-      const r = await sql<{ id: string }>`insert into app.departments (code, name, parent_id, cost_centre_id, is_active)
-        values (${d.code}, ${d.name}, ${d.parentId}::uuid, ${d.costCentreId}::uuid, ${d.isActive}) returning id`.execute(tx);
+      const r = await sql<{ id: string }>`insert into app.departments (code, name, parent_id, head_employee_id, cost_centre_id, is_active)
+        values (${d.code}, ${d.name}, ${d.parentId}::uuid, ${d.headEmployeeId}::uuid, ${d.costCentreId}::uuid, ${d.isActive}) returning id`.execute(tx);
       return { id: r.rows[0]!.id };
     });
   });
@@ -242,10 +240,9 @@ export async function createDepartment(input: Input): Promise<ActionResult<{ id:
 
 export async function updateDepartment(input: Input): Promise<ActionResult<{ id: string }>> {
   return runAction(ADMIN, updateDepartmentSchema, input, async (d, { ctx }) => {
-    if (d.headEmployeeId) return fail(HEAD_LATER, { headEmployeeId: HEAD_LATER });
     return withUserTx(ctx, async (tx) => {
       const r = await sql<{ id: string }>`update app.departments set code = ${d.code}, name = ${d.name}, parent_id = ${d.parentId}::uuid,
-          cost_centre_id = ${d.costCentreId}::uuid, is_active = ${d.isActive} where id = ${d.id}::uuid returning id`.execute(tx);
+          head_employee_id = ${d.headEmployeeId}::uuid, cost_centre_id = ${d.costCentreId}::uuid, is_active = ${d.isActive} where id = ${d.id}::uuid returning id`.execute(tx);
       return r.rows[0] ? { id: r.rows[0].id } : NOT_FOUND;
     });
   });
@@ -358,8 +355,10 @@ export async function updateLocation(input: Input): Promise<ActionResult<UpdateL
       await sql`update app.work_locations set name = ${d.name}, addr_line1 = ${a.line1}, addr_line2 = ${a.line2}, addr_line3 = ${a.line3},
                   postcode = ${a.postcode}, city = ${a.city}, state = ${d.state}::app.my_state, default_pattern_id = ${d.defaultPatternId}::uuid,
                   is_active = ${d.isActive} where id = ${d.id}::uuid`.execute(tx);
-      // Leave recount for affected employees arrives with the employee and leave modules (W2-003+).
-      return { id: d.id, stateChanged: before.state !== d.state, affectedEmployees: 0 };
+      // Employees' work state follows the location (trigger); the leave recount itself arrives with W2-004.
+      const n = (await sql<{ n: number }>`select count(*)::int as n from app.employees where work_location_id = ${d.id}::uuid
+          and status in ('pending_join','on_probation','confirmed','notice_period')`.execute(tx)).rows[0]?.n ?? 0;
+      return { id: d.id, stateChanged: before.state !== d.state, affectedEmployees: before.state !== d.state ? n : 0 };
     }));
 }
 
@@ -613,6 +612,7 @@ export async function createEmployeeGroup(input: Input): Promise<ActionResult<{ 
     withUserTx(ctx, async (tx) => {
       const r = await sql<{ id: string }>`insert into app.employee_groups (name, description, is_active)
         values (${d.name}, ${d.description}, ${d.isActive}) returning id`.execute(tx);
+      if (d.memberIds) await setGroupMembers(tx, r.rows[0]!.id, d.memberIds);
       return { id: r.rows[0]!.id };
     }));
 }
@@ -622,7 +622,51 @@ export async function updateEmployeeGroup(input: Input): Promise<ActionResult<{ 
     withUserTx(ctx, async (tx) => {
       const r = await sql<{ id: string }>`update app.employee_groups set name = ${d.name}, description = ${d.description}, is_active = ${d.isActive}
          where id = ${d.id}::uuid returning id`.execute(tx);
-      return r.rows[0] ? { id: r.rows[0].id } : NOT_FOUND;
+      if (!r.rows[0]) return NOT_FOUND;
+      if (d.memberIds) await setGroupMembers(tx, d.id, d.memberIds);
+      return { id: r.rows[0].id };
+    }));
+}
+
+/** W2-003: replaces the member list (F-ORG-14 / F28). */
+async function setGroupMembers(tx: Tx, groupId: string, memberIds: string[]): Promise<void> {
+  const ids = [...new Set(memberIds)];
+  await sql`delete from app.employee_group_members where group_id = ${groupId}::uuid and not (employee_id = any(${ids}::uuid[]))`.execute(tx);
+  if (ids.length) {
+    await sql`insert into app.employee_group_members (group_id, employee_id)
+              select ${groupId}::uuid, e.id from app.employees e where e.id = any(${ids}::uuid[])
+              on conflict do nothing`.execute(tx);
+  }
+}
+
+// ===========================================================================
+// O8 Reporting lines (F-ORG-11, US-ORG-009) — W2-003
+// ===========================================================================
+/** Moves reportees to a new manager with "Manager change" job-history rows (effective-dated; future = scheduled). */
+export async function reassignReportees(input: Input): Promise<ActionResult<ReassignReporteesResult>> {
+  return runAction(ADMIN, reassignReporteesSchema, input, async (d, { ctx }) =>
+    withUserTx({ ...ctx, reason: d.remarks ?? ctx.reason }, async (tx) => {
+      const rows: ReassignReporteesResult['rows'] = [];
+      for (const id of [...new Set(d.employeeIds)]) {
+        const no = (await sql<{ employee_no: string }>`select employee_no from app.employees where id = ${id}::uuid`.execute(tx)).rows[0]?.employee_no ?? '';
+        if (!no) { rows.push({ employeeId: id, employeeNo: '', ok: false, message: 'Not found or no access.' }); continue; }
+        if (id === d.newManagerId) { rows.push({ employeeId: id, employeeNo: no, ok: false, message: 'An employee cannot be their own manager.' }); continue; }
+        await addManagerChange(tx, id, d.newManagerId, d.effectiveDate, d.remarks ?? 'Reporting lines reassigned');
+        rows.push({ employeeId: id, employeeNo: no, ok: true, message: null });
+      }
+      return { moved: rows.filter((r) => r.ok).length, rows };
+    }), { newManagerId: 'newManagerId' });
+}
+
+export async function exportReportingLinesCsv(): Promise<ActionResult<CsvFile>> {
+  return runAction(ADMIN, z.object({}), {}, async (_d, { ctx }) =>
+    withUserTx(ctx, async (tx) => {
+      const r = await reportingLines(tx);
+      const byId = new Map(r.nodes.map((n) => [n.employeeId, n]));
+      await exported(tx, 'reporting_lines', r.nodes.length);
+      return csvFile('reporting-lines', ['Employee no.', 'Employee', 'Position', 'Department', 'Manager', 'Since', 'Direct reportees', 'Indirect reportees'],
+        r.nodes.map((n) => [n.employeeNo, n.name, n.position, n.department, n.managerId ? byId.get(n.managerId)?.name ?? '' : '',
+          csvDate(n.managerSince), n.directCount, n.indirectCount]));
     }));
 }
 

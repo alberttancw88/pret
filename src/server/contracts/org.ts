@@ -216,7 +216,7 @@ export const departmentInputSchema = z.object({
   code: codeSchema(10),
   name: requiredText(80, 'Name'),
   parentId: optionalUuidSchema,
-  /** Must be null until employee records exist (W2-003). */
+  /** Head of department — an active employee (W2-003). */
   headEmployeeId: optionalUuidSchema,
   costCentreId: optionalUuidSchema,
   isActive: booleanSchema.default(true),
@@ -496,10 +496,40 @@ export const employeeGroupInputSchema = z.object({
   name: requiredText(80, 'Name'),
   description: optionalText(500, 'Description'),
   isActive: booleanSchema.default(true),
+  /** W2-003: the full member list (replaces membership). Omit to leave members unchanged. */
+  memberIds: z.array(uuidSchema).max(500).optional(),
 });
 export const updateEmployeeGroupSchema = employeeGroupInputSchema.extend({ id: uuidSchema });
 export type EmployeeGroupInput = z.input<typeof employeeGroupInputSchema>;
 export type UpdateEmployeeGroupInput = z.input<typeof updateEmployeeGroupSchema>;
+
+// ===========================================================================
+// O8 Reporting lines (F-ORG-11, US-ORG-009) — /organisation/reporting-lines  [ADM, SA]  (W2-003)
+// ===========================================================================
+export type ReportingLineNode = {
+  employeeId: string; employeeNo: string; name: string; position: string; department: string;
+  managerId: string | null; managerSince: string | null;
+  status: 'pending_join' | 'on_probation' | 'confirmed' | 'notice_period';
+  isTopOfOrg: boolean;
+  directCount: number; indirectCount: number;
+  /** active approval delegation set by this person (if any) */
+  delegation: { delegateName: string; validFrom: string; validTo: string; scope: 'leave' | 'claims' | 'both' } | null;
+};
+export type ReportingLines = {
+  nodes: ReportingLineNode[];
+  roots: string[];                         // top of organisation (and anyone without a manager)
+  /** N-49: active employees whose manager is Separated / Withdrawn (or missing without Top of organisation) */
+  withoutActiveManager: { employeeId: string; employeeNo: string; name: string; managerName: string | null; managerStatus: string | null }[];
+};
+export const reassignReporteesSchema = z.object({
+  fromManagerId: optionalUuidSchema,
+  employeeIds: z.array(uuidSchema).min(1, 'Select the reportees to move.').max(500),
+  newManagerId: uuidSchema,
+  effectiveDate: isoDateSchema,
+  remarks: optionalText(500, 'Remarks'),
+});
+export type ReassignReporteesInput = z.input<typeof reassignReporteesSchema>;
+export type ReassignReporteesResult = { moved: number; rows: { employeeId: string; employeeNo: string; ok: boolean; message: string | null }[] };
 
 // ===========================================================================
 // Options for selects (one call per form)
@@ -664,6 +694,10 @@ export type SaveNotificationSettingsInput = z.input<typeof saveNotificationSetti
 //       exportHolidaysCsv(p: HolidayListParams): Promise<ActionResult<CsvFile>>                         [ADM, SA]
 //   O9  createCostCentre / updateCostCentre / setCostCentreActive / exportCostCentresCsv                [ADM, SA]
 //   O10 createEmployeeGroup / updateEmployeeGroup / setEmployeeGroupActive / exportEmployeeGroupsCsv    [ADM, SA]
+//       (W2-003: memberIds replaces the member list when given; headcounts / head / members now filled)
+//   O8  (W2-003) queries/org.ts getReportingLines(): Promise<ReportingLines>                           [ADM, SA]
+//       reassignReportees(i: ReassignReporteesInput): Promise<ActionResult<ReassignReporteesResult>>  [ADM, SA] (job-history rows "Manager change")
+//       exportReportingLinesCsv(): Promise<ActionResult<CsvFile>>   (Employee · Manager · Since)        [ADM, SA]
 //   O11 saveEmployeeNumberSettings(i) / saveProbationNoticeSettings(i) / saveSignInSecuritySettings(i) /
 //       saveApprovalSettings(i) / saveEmploymentSettings(i) / saveRetentionSettings(i) /
 //       saveNotificationSettings(i): Promise<ActionResult<{ changed: string[] }>>                       [SA]

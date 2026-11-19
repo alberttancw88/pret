@@ -40,6 +40,19 @@ insert into fx (n, auth_id, emp_id) values
 insert into auth.users (id, email, aud, role)
 select auth_id, 'pret-test-' || n || '@example.invalid', 'authenticated', 'authenticated' from fx where auth_id is not null;
 
+-- W2-003: app_users.employee_id now references app.employees (FK) — minimal synthetic employee rows for the
+-- employee-user fixtures (system write; deferred Top-of-organisation checks never fire because the test rolls back).
+insert into app.grades (code, name, rank) values ('FXTG', 'FX TEST grade', 993);
+insert into app.positions (code, title) values ('FXTP', 'FX TEST position');
+insert into app.employees (id, employee_no, full_name, gender, work_email, mobile_phone, join_date, probation_months,
+                           department_id, position_id, grade_id, work_location_id, work_state, working_pattern_id, status)
+select f.emp_id, 'FXT-' || upper(f.n), 'Sample Fixture', 'female', 'fxt-' || f.n || '@example.invalid', '+60120000000',
+       app.today_myt() - 100, 0,
+       (select id from app.departments where is_active order by code limit 1), (select id from app.positions where code = 'FXTP'),
+       (select id from app.grades where code = 'FXTG'), (select id from app.work_locations where is_active order by name limit 1),
+       'SGR', (select id from app.working_patterns where is_active order by name limit 1), 'confirmed'
+  from fx f where f.emp_id is not null;
+
 insert into app.app_users (auth_user_id, user_type, employee_id, login_email, display_name, status, access_start_date, access_end_date, service_provider)
 select f.auth_id,
        case when f.emp_id is null then 'external' else 'employee' end::app.user_type,

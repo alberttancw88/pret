@@ -10,9 +10,9 @@ import { createClient } from '@supabase/supabase-js';
 import { sql, withJobTx, withUserTx, type Tx } from '../db';
 import type { Role } from '../auth/current-user';
 import { writeAccess } from '../audit';
-import { hashInviteToken, newInviteToken } from '../auth/invitations';
+import { companyName, createEmployeeUser, createInvitation, deliverInvitation, inviteMessage, setInviteSchedule } from '../lib/invites';
 import { createSupabaseAdminClient } from '../auth/supabase';
-import { appOrigin, invitationEmail, sendDirectEmail } from '../email';
+import { appOrigin } from '../email';
 import { env } from '../env';
 import { confirmUpload, getDownloadUrl, requestUpload } from '../storage';
 import { fail, NO_ACCESS, runAction, type Input } from '../lib/action-helpers';
@@ -33,7 +33,6 @@ const ADMIN: Role[] = ['ADM', 'SA'];
 const SA: Role[] = ['SA'];
 const ANY: Role[] = ['EMP', 'MGR', 'ADM', 'SA'];
 const NOT_FOUND = { ok: false as const, error: NO_ACCESS };
-const EMPLOYEE_INVITE_LATER = 'Employee users can be invited once employee records are available (W2-003). External administrators can be invited now.';
 
 type Target = { id: string; user_type: 'employee' | 'external'; status: UserStatus; auth_user_id: string | null; login_email: string; display_name: string; roles: PrivilegedRole[] };
 
@@ -46,46 +45,41 @@ async function target(tx: Tx, userId: string, lock = false): Promise<Target | nu
   return r.rows[0] ?? null;
 }
 
-// ---------------------------------------------------------------------------
-// Invitations (ADR-0014) — token only in the email; DB keeps its SHA-256.
-// ---------------------------------------------------------------------------
-async function createInvitation(tx: Tx, userId: string): Promise<{ token: string; invitationId: string; expiresAt: Date }> {
-  const token = newInviteToken();
-  const r = await sql<{ id: string }>`
-    select app.create_invitation(${userId}::uuid, ${hashInviteToken(token)},
-      now() + make_interval(hours => coalesce((select st.invite_link_hours from app.security_settings st where st.id = 1), 72)),
-      null) as id`.execute(tx);
-  const invitationId = r.rows[0]!.id;
-  // separate statement: rows written by the function are not visible to the statement that called it
-  const e = await sql<{ expires_at: Date }>`select expires_at from app.user_invitations where id = ${invitationId}::uuid`.execute(tx);
-  return { token, invitationId, expiresAt: e.rows[0]!.expires_at };
-}
-
-async function deliverInvitation(
-  inv: { token: string; invitationId: string; expiresAt: Date },
-  to: { email: string; displayName: string },
-  companyName: string,
-): Promise<boolean> {
-  const acceptUrl = `${await appOrigin()}/accept-invite?token=${encodeURIComponent(inv.token)}`;
-  const mail = invitationEmail({ displayName: to.displayName, acceptUrl, expiresText: formatDateTime(inv.expiresAt), companyName });
-  const res = await sendDirectEmail({ to: to.email, ...mail });
-  if (res.sent) {
-    await withJobTx('invite-sent', async (tx) => {
-      await sql`update app.user_invitations set sent_at = now() where id = ${inv.invitationId}::uuid and sent_at is null`.execute(tx);
-    });
-  }
-  return res.sent;
-}
-
-function inviteMessage(sent: boolean): string {
-  return sent
-    ? 'Invitation sent.'
-    : 'The account was created but the invitation email could not be sent (email is not configured on the server yet). Use RESEND INVITE once email is set up.';
-}
+// Invitations (ADR-0014) — shared helpers in ../lib/invites (token only in the email; DB keeps its SHA-256).
 
 export async function inviteUser(input: Input): Promise<ActionResult<InviteUserResult>> {
   return runAction(ADMIN, inviteUserSchema, input, async (d, { user, ctx }) => {
-    if (d.userType === 'employee') return fail(EMPLOYEE_INVITE_LATER, { employeeId: EMPLOYEE_INVITE_LATER });
+    if (d.userType === 'employee') {
+      // A6 employee branch (F-ADM-02, W2-003): login email = work email; roles SA only.
+      if (d.roles.length && !user.roles.includes('SA')) return fail('Only a Super Admin can give privileged roles.', { roles: 'Only a Super Admin can give privileged roles.' });
+      const scheduled = d.sendMode === 'schedule' && d.scheduledSendDate ? d.scheduledSendDate : null;
+      const created = await withUserTx(ctx, async (tx) => {
+        const emp = (await sql<{ id: string; status: string; has_user: boolean; today: string }>`
+          select e.id, e.status::text as status, exists (select 1 from app.employee_portal_accounts(array[e.id]) pa) as has_user,
+                 app.today_myt()::text as today
+            from app.employees e where e.id = ${d.employeeId}::uuid`.execute(tx)).rows[0];
+        if (!emp) return 'missing' as const;
+        if (emp.has_user) return 'exists' as const;
+        if (!['pending_join', 'on_probation', 'confirmed', 'notice_period'].includes(emp.status)) return 'inactive' as const;
+        const u = await createEmployeeUser(tx, d.employeeId, scheduled && scheduled > emp.today ? scheduled : null);
+        if (d.displayName) await sql`update app.app_users set display_name = ${d.displayName} where id = ${u.userId}::uuid`.execute(tx);
+        if (d.accessStartDate) await sql`update app.app_users set access_start_date = ${d.accessStartDate}::date where id = ${u.userId}::uuid`.execute(tx);
+        for (const role of d.roles) {
+          await sql`insert into app.user_roles (user_id, role, granted_by) values (${u.userId}::uuid, ${role}::app.privileged_role, app.current_app_user_id())`.execute(tx);
+        }
+        const now = !(scheduled && scheduled > emp.today);
+        const inv = now ? await createInvitation(tx, u.userId) : null;
+        return { ...u, displayName: d.displayName ?? u.displayName, inv, co: await companyName(tx), scheduledFor: now ? null : scheduled };
+      });
+      if (created === 'missing') return fail('Employee not found.', { employeeId: 'Employee not found.' });
+      if (created === 'exists') return fail('This employee already has a user account.', { employeeId: 'This employee already has a user account.' });
+      if (created === 'inactive') return fail('Only active or joining employees can be invited.', { employeeId: 'Only active or joining employees can be invited.' });
+      if (!created.inv) {
+        return { userId: created.userId, emailSent: false, expiresAt: '', message: `Invitation scheduled for ${created.scheduledFor!.split('-').reverse().join('/')}.` };
+      }
+      const sent = await deliverInvitation(created.inv, { email: created.email, displayName: created.displayName }, created.co);
+      return { userId: created.userId, emailSent: sent, expiresAt: created.inv.expiresAt.toISOString(), message: inviteMessage(sent) };
+    }
     if (!user.roles.includes('SA')) return fail('Only a Super Admin can create external administrator accounts.');
     const created = await withUserTx(ctx, async (tx) => {
       const u = await sql<{ id: string }>`
@@ -95,8 +89,7 @@ export async function inviteUser(input: Input): Promise<ActionResult<InviteUserR
       const userId = u.rows[0]!.id;
       await sql`insert into app.user_roles (user_id, role, granted_by) values (${userId}::uuid, 'ADM', app.current_app_user_id())`.execute(tx);
       const inv = await createInvitation(tx, userId);
-      const co = (await sql<{ legal_name: string }>`select legal_name from app.company_profile where id = 1`.execute(tx)).rows[0]?.legal_name ?? 'Interact';
-      return { userId, inv, co };
+      return { userId, inv, co: await companyName(tx) };
     });
     const sent = await deliverInvitation(created.inv, { email: d.loginEmail, displayName: d.displayName }, created.co);
     return { userId: created.userId, emailSent: sent, expiresAt: created.inv.expiresAt.toISOString(), message: inviteMessage(sent) };
@@ -110,8 +103,8 @@ export async function resendInvite(input: Input): Promise<ActionResult<InviteUse
       if (!t) return null;
       if (t.status !== 'invited' || t.auth_user_id) return 'state' as const;
       const inv = await createInvitation(tx, t.id);
-      const co = (await sql<{ legal_name: string }>`select legal_name from app.company_profile where id = 1`.execute(tx)).rows[0]?.legal_name ?? 'Interact';
-      return { t, inv, co };
+      await setInviteSchedule(tx, t.id, null);
+      return { t, inv, co: await companyName(tx) };
     });
     if (!r) return NOT_FOUND;
     if (r === 'state') return fail('This user is not waiting for an invitation.');

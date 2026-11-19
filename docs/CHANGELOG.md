@@ -9,6 +9,34 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.6] — 2026-11-19 — W2-003 Employee master records built
+### Added
+- Employee records (M1, ADM/SA): employee list with completeness, 6-step new-employee wizard
+  (MyKad validation, DOB/gender derivation, duplicate check), 15-tab profile, job changes
+  (effective-dated, future-dated applied nightly), probation, separation, withdraw resignation,
+  rehire, documents (private Storage, logged downloads), bank details (D15), statutory and PCB
+  relief profile, HR notes, change history and activity log, change-request queue and review,
+  bulk update via CSV, bulk actions; NRIC and bank numbers encrypted with blind index (ADR-0003),
+  masked, logged reveal.
+- Self-service and team: My profile, request a change (all 9 categories), my change requests,
+  my documents, team list and limited team-member profile with probation recommendation, staff
+  directory, org chart.
+- From W2-002: department head, O8 reporting lines (reassign, CSV), group members (incl. add by
+  department/location), employee-user invites; F-ADM-06 leavers lose access automatically.
+- Jobs: nightly pg_cron job (00:05 MYT); Vercel cron `/api/cron/daily` (00:15 MYT) sends scheduled
+  invitations, protected by `CRON_SECRET`.
+- Database: 7 migrations on `pret-dev` (26 new tables, RLS forced on all); synthetic seed of 8
+  sample employees (generator `supabase/seed/w2_003_employees.mjs`); owner-record script
+  `supabase/seed/owner_employee.mjs`.
+- Tests: W2-003 role matrix 90/90, W2-002 91/91, foundation 86/86, unit 58/58.
+- Decision D29: W2-003 open questions accepted at their defaults.
+### Deferred
+- Leave tab and leaver leave → W2-004; Claims tab → W2-005; compensation → R1.1; notification
+  delivery → W2-007; privacy A12–A14 → later item.
+### Known gaps
+- Not yet exercised in a browser. `CRON_SECRET` not yet set in Vercel. Super Admin's own
+  employee record not yet created (FK `fk_app_users_employee` still NOT VALID).
+
 ## [0.2.5] — 2026-11-19 — Token lifetime decision, personal-folder rule
 ### Added
 - Decision D28: Supabase access-token lifetime stays at 1 hour (replaces 10 minutes in

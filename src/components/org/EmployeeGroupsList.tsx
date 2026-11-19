@@ -3,12 +3,9 @@
 // O10 · Employee groups — S-OR-10 · /organisation/groups · F-ORG-14 (Could) · US-ORG-011.
 // List: Search · Filter Active · Columns Name › · Description · Members (count) ·
 // Used by (limits / overrides) · Active ●. Form: Name * · Description · Members (multi employee
-// picker with chips; ADD BY FILTER department/location — after W2-003) · Active *.
+// picker with chips + ADD BY FILTER department / location, W2-003) · Active *.
 import * as React from 'react';
-import Alert from '@mui/material/Alert';
-import Chip from '@mui/material/Chip';
-import Stack from '@mui/material/Stack';
-import type { EmployeeGroupDetail, EmployeeGroupRow, GroupListParams } from '@/server/contracts/org';
+import type { EmployeeGroupDetail, EmployeeGroupRow, GroupListParams, OrgOptions } from '@/server/contracts/org';
 import { createEmployeeGroup, exportEmployeeGroupsCsv, setEmployeeGroupActive, updateEmployeeGroup } from '@/server/actions/org';
 import StatusChip from '../StatusChip';
 import { KeywordField, SelectFilter } from '../list/FilterFields';
@@ -16,20 +13,24 @@ import type { ListColumn } from '../list/ListPage';
 import { FormGrid, FullRow, SwitchInput, TextInput } from '../forms/fields';
 import MasterList, { csvResult } from './MasterList';
 import { GROUP_FILTERS } from './filters';
+import type { PickedEmployee } from '../employees/EmployeePicker';
+import GroupMembersField from './GroupMembersField';
 import { ACTIVE_FILTER_OPTIONS, activeLabel, countOrDash, stampsMeta } from './common';
 
-type FormValue = { name: string; description: string; isActive: boolean };
+type FormValue = { name: string; description: string; members: PickedEmployee[]; isActive: boolean };
 
 export default function EmployeeGroupsList({
   rows,
   total,
   params,
   detail,
+  options,
 }: {
   rows: EmployeeGroupRow[];
   total: number;
   params: GroupListParams;
   detail: EmployeeGroupDetail | null;
+  options: OrgOptions;
 }) {
   const columns: ListColumn<EmployeeGroupRow>[] = [
     { key: 'name', header: 'Name', value: (r) => r.name, minWidth: 180 },
@@ -64,32 +65,25 @@ export default function EmployeeGroupsList({
       canEdit
       addLabel="Add new employee group"
       formTitle={(d) => (d ? `Edit employee group ${d.name}` : 'New employee group')}
-      emptyForm={() => ({ name: '', description: '', isActive: true })}
-      toForm={(d) => ({ name: d.name, description: d.description ?? '', isActive: d.isActive })}
+      emptyForm={() => ({ name: '', description: '', members: [], isActive: true })}
+      toForm={(d) => ({ name: d.name, description: d.description ?? '', members: d.members.map((m) => ({ id: m.employeeId, employeeNo: m.employeeNo, name: m.name })), isActive: d.isActive })}
       fieldLabels={{ name: 'Name', description: 'Description' }}
       validate={(v): Record<string, string> => (v.name.trim() ? {} : { name: 'Name is required.' })}
-      onSave={(v, d) => (d ? updateEmployeeGroup({ ...v, id: d.id }) : createEmployeeGroup(v))}
+      onSave={(v, d) => {
+        const input = { name: v.name, description: v.description, isActive: v.isActive, memberIds: v.members.map((m) => m.id) };
+        return d ? updateEmployeeGroup({ ...input, id: d.id }) : createEmployeeGroup(input);
+      }}
       savedMessage={(v) => `Employee group ${v.name.trim()} saved.`}
       isActive={(r) => r.isActive}
       onSetActive={(r, isActive) => setEmployeeGroupActive({ id: r.id, isActive })}
       meta={stampsMeta}
       onExport={async () => csvResult(await exportEmployeeGroupsCsv(params))}
-      renderForm={({ value, set, errors }, d) => (
+      renderForm={({ value, set, errors }) => (
         <FormGrid>
           <TextInput full label="Name" required value={value.name} onChange={(v) => set('name', v)} maxLength={80} error={errors.name} helper="Unique" />
           <TextInput full label="Description" value={value.description} onChange={(v) => set('description', v)} maxLength={500} multiline minRows={2} error={errors.description} />
           <FullRow>
-            {d && d.members.length > 0 ? (
-              <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap aria-label="Members">
-                {d.members.map((m) => (
-                  <Chip key={m.employeeId} size="small" label={`${m.employeeNo} · ${m.name}`} />
-                ))}
-              </Stack>
-            ) : (
-              <Alert severity="info" variant="outlined">
-                Members (employee picker and ADD BY FILTER department/location) are available after employee records are added.
-              </Alert>
-            )}
+            <GroupMembersField value={value.members} onChange={(v) => set('members', v)} error={errors.memberIds} options={options} />
           </FullRow>
           <SwitchInput label="Active *" checked={value.isActive} onChange={(v) => set('isActive', v)} error={errors.isActive} />
         </FormGrid>

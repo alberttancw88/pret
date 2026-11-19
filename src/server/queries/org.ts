@@ -13,7 +13,7 @@ import {
   type GradeListParams, type GradeRow, type GroupListParams, type HolidayDetail, type HolidayListParams, type HolidayRow,
   type HolidayType, type HolidayYearSummary, type LocationDetail, type LocationListParams, type LocationRow,
   type MonthDayBasis, type MyState, type OrgOptions, type Paged, type PatternListParams, type PatternVersion,
-  type PositionDetail, type PositionListParams, type PositionRow, type SystemSettings, type WorkingPatternDetail,
+  type PositionDetail, type PositionListParams, type PositionRow, type ReportingLineNode, type ReportingLines, type SystemSettings, type WorkingPatternDetail,
   type WorkingPatternRow,
 } from '../contracts/org';
 import { MY_STATES } from '../contracts/common';
@@ -142,14 +142,14 @@ export async function getCompanyLogoUrl(): Promise<string | null> {
 // ===========================================================================
 type DeptDb = {
   id: string; code: string; name: string; parent_id: string | null; parent_name: string | null; head_employee_id: string | null;
-  cost_centre_id: string | null; cost_centre_name: string | null; is_active: boolean;
+  cost_centre_id: string | null; cost_centre_name: string | null; is_active: boolean; head_name: string | null; headcount: number;
   created_at: Date; created_by: string | null; updated_at: Date; updated_by: string | null;
 };
 const DEPT_SORT: Record<string, string> = { code: 'd.code', name: 'd.name', parent: 'p.name' };
 const mapDept = (r: DeptDb): DepartmentRow => ({
   id: r.id, code: r.code, name: r.name, parentId: r.parent_id, parentName: r.parent_name,
-  headEmployeeId: r.head_employee_id, headName: null, costCentreId: r.cost_centre_id, costCentreName: r.cost_centre_name,
-  activeHeadcount: null, isActive: r.is_active,
+  headEmployeeId: r.head_employee_id, headName: r.head_name, costCentreId: r.cost_centre_id, costCentreName: r.cost_centre_name,
+  activeHeadcount: r.headcount, isActive: r.is_active,
 });
 
 export async function departmentRows(tx: Tx, params: DepartmentListParams, all = false): Promise<Paged<DepartmentRow>> {
@@ -163,7 +163,9 @@ export async function departmentRows(tx: Tx, params: DepartmentListParams, all =
   const from = sql`app.departments d left join app.departments p on p.id = d.parent_id left join app.cost_centres cc on cc.id = d.cost_centre_id`;
   const { limit, offset } = pageOf(p, all);
   const rows = await sql<DeptDb>`
-    select d.*, p.name as parent_name, cc.name as cost_centre_name from ${from} where ${where}
+    select d.*, p.name as parent_name, cc.name as cost_centre_name,
+           (select h.full_name from app.employees h where h.id = d.head_employee_id) as head_name,
+           (select count(*)::int from app.employees e where e.department_id = d.id and e.status in ('pending_join','on_probation','confirmed','notice_period')) as headcount from ${from} where ${where}
      order by ${sql.raw(DEPT_SORT[p.sort] ?? 'd.code')} ${dirOf(p.dir)} nulls last, d.code
      limit ${limit} offset ${offset}`.execute(tx);
   return { rows: rows.rows.map(mapDept), total: await count(tx, from, where), page: all ? 1 : p.page, pageSize: all ? EXPORT_LIMIT : p.pageSize };
@@ -178,7 +180,9 @@ export async function getDepartment(id: string): Promise<DepartmentDetail | null
   const { ctx } = await authorize(ORG_ADMIN);
   return withUserTx(ctx, async (tx) => {
     const r = (await sql<DeptDb>`
-      select d.*, p.name as parent_name, cc.name as cost_centre_name
+      select d.*, p.name as parent_name, cc.name as cost_centre_name,
+           (select h.full_name from app.employees h where h.id = d.head_employee_id) as head_name,
+           (select count(*)::int from app.employees e where e.department_id = d.id and e.status in ('pending_join','on_probation','confirmed','notice_period')) as headcount
         from app.departments d left join app.departments p on p.id = d.parent_id left join app.cost_centres cc on cc.id = d.cost_centre_id
        where d.id = ${id}::uuid`.execute(tx)).rows[0];
     if (!r) return null;
@@ -190,7 +194,7 @@ export async function getDepartment(id: string): Promise<DepartmentDetail | null
 // ===========================================================================
 // O3 Positions
 // ===========================================================================
-type PosDb = {
+type PosDb = { headcount?: number;
   id: string; code: string; title: string; default_department_id: string | null; department_name: string | null;
   default_grade_id: string | null; grade_name: string | null; description: string | null; is_active: boolean;
   created_at: Date; created_by: string | null; updated_at: Date; updated_by: string | null;
@@ -198,7 +202,7 @@ type PosDb = {
 const POS_SORT: Record<string, string> = { code: 'x.code', title: 'x.title', department: 'd.name', grade: 'g.rank' };
 const mapPos = (r: PosDb): PositionRow => ({
   id: r.id, code: r.code, title: r.title, defaultDepartmentId: r.default_department_id, defaultDepartmentName: r.department_name,
-  defaultGradeId: r.default_grade_id, defaultGradeName: r.grade_name, headcount: null, isActive: r.is_active,
+  defaultGradeId: r.default_grade_id, defaultGradeName: r.grade_name, headcount: r.headcount ?? 0, isActive: r.is_active,
 });
 const POS_FROM = sql`app.positions x left join app.departments d on d.id = x.default_department_id left join app.grades g on g.id = x.default_grade_id`;
 
@@ -213,7 +217,8 @@ export async function positionRows(tx: Tx, params: PositionListParams, all = fal
   ]);
   const { limit, offset } = pageOf(p, all);
   const rows = await sql<PosDb>`
-    select x.*, d.name as department_name, g.name as grade_name from ${POS_FROM} where ${where}
+    select x.*, d.name as department_name, g.name as grade_name,
+      (select count(*)::int from app.employees e where e.position_id = x.id and e.status in ('pending_join','on_probation','confirmed','notice_period')) as headcount from ${POS_FROM} where ${where}
      order by ${sql.raw(POS_SORT[p.sort] ?? 'x.code')} ${dirOf(p.dir)} nulls last, x.code
      limit ${limit} offset ${offset}`.execute(tx);
   return { rows: rows.rows.map(mapPos), total: await count(tx, POS_FROM, where), page: all ? 1 : p.page, pageSize: all ? EXPORT_LIMIT : p.pageSize };
@@ -227,7 +232,8 @@ export async function listPositions(params: PositionListParams): Promise<Paged<P
 export async function getPosition(id: string): Promise<PositionDetail | null> {
   const { ctx } = await authorize(ORG_ADMIN);
   return withUserTx(ctx, async (tx) => {
-    const r = (await sql<PosDb>`select x.*, d.name as department_name, g.name as grade_name from ${POS_FROM} where x.id = ${id}::uuid`.execute(tx)).rows[0];
+    const r = (await sql<PosDb>`select x.*, d.name as department_name, g.name as grade_name,
+      (select count(*)::int from app.employees e where e.position_id = x.id and e.status in ('pending_join','on_probation','confirmed','notice_period')) as headcount from ${POS_FROM} where x.id = ${id}::uuid`.execute(tx)).rows[0];
     if (!r) return null;
     const names = await resolveNames(tx, [r.created_by, r.updated_by]);
     return { ...mapPos(r), description: r.description, ...stamps(r, names) };
@@ -237,9 +243,9 @@ export async function getPosition(id: string): Promise<PositionDetail | null> {
 // ===========================================================================
 // O4 Grades
 // ===========================================================================
-type GradeDb = { id: string; code: string; name: string; rank: number; is_active: boolean; created_at: Date; created_by: string | null; updated_at: Date; updated_by: string | null };
+type GradeDb = { headcount?: number; id: string; code: string; name: string; rank: number; is_active: boolean; created_at: Date; created_by: string | null; updated_at: Date; updated_by: string | null };
 const GRADE_SORT: Record<string, string> = { code: 'g.code', name: 'g.name', rank: 'g.rank' };
-const mapGrade = (r: GradeDb): GradeRow => ({ id: r.id, code: r.code, name: r.name, rank: r.rank, headcount: null, isActive: r.is_active });
+const mapGrade = (r: GradeDb): GradeRow => ({ id: r.id, code: r.code, name: r.name, rank: r.rank, headcount: r.headcount ?? 0, isActive: r.is_active });
 
 export async function gradeRows(tx: Tx, params: GradeListParams, all = false): Promise<Paged<GradeRow>> {
   const p = parseParams(gradeListParamsSchema, params);
@@ -247,7 +253,7 @@ export async function gradeRows(tx: Tx, params: GradeListParams, all = false): P
   const where = and([...(q ? [sql`(g.code ilike ${q} or g.name ilike ${q})`] : []), ...activeCond('g.is_active', p.active)]);
   const from = sql`app.grades g`;
   const { limit, offset } = pageOf(p, all);
-  const rows = await sql<GradeDb>`select g.* from ${from} where ${where}
+  const rows = await sql<GradeDb>`select g.*, (select count(*)::int from app.employees e where e.grade_id = g.id and e.status in ('pending_join','on_probation','confirmed','notice_period')) as headcount from ${from} where ${where}
      order by ${sql.raw(GRADE_SORT[p.sort] ?? 'g.rank')} ${dirOf(p.dir)}, g.code limit ${limit} offset ${offset}`.execute(tx);
   return { rows: rows.rows.map(mapGrade), total: await count(tx, from, where), page: all ? 1 : p.page, pageSize: all ? EXPORT_LIMIT : p.pageSize };
 }
@@ -260,7 +266,7 @@ export async function listGrades(params: GradeListParams): Promise<Paged<GradeRo
 export async function getGrade(id: string): Promise<GradeDetail | null> {
   const { ctx } = await authorize(ORG_ADMIN);
   return withUserTx(ctx, async (tx) => {
-    const r = (await sql<GradeDb>`select * from app.grades where id = ${id}::uuid`.execute(tx)).rows[0];
+    const r = (await sql<GradeDb>`select g.*, (select count(*)::int from app.employees e where e.grade_id = g.id and e.status in ('pending_join','on_probation','confirmed','notice_period')) as headcount from app.grades g where g.id = ${id}::uuid`.execute(tx)).rows[0];
     if (!r) return null;
     return { ...mapGrade(r), ...stamps(r, await resolveNames(tx, [r.created_by, r.updated_by])) };
   });
@@ -269,7 +275,7 @@ export async function getGrade(id: string): Promise<GradeDetail | null> {
 // ===========================================================================
 // O5 Work locations
 // ===========================================================================
-type LocDb = {
+type LocDb = { active_employees?: number;
   id: string; name: string; addr_line1: string; addr_line2: string | null; addr_line3: string | null; postcode: string; city: string;
   state: MyState; default_pattern_id: string; pattern_name: string; is_active: boolean;
   created_at: Date; created_by: string | null; updated_at: Date; updated_by: string | null;
@@ -278,7 +284,7 @@ const LOC_SORT: Record<string, string> = { name: 'l.name', state: 'l.state', pat
 const LOC_FROM = sql`app.work_locations l join app.working_patterns wp on wp.id = l.default_pattern_id`;
 const mapLoc = (r: LocDb): LocationRow => ({
   id: r.id, name: r.name, state: r.state, city: r.city, defaultPatternId: r.default_pattern_id, defaultPatternName: r.pattern_name,
-  activeEmployees: null, isActive: r.is_active,
+  activeEmployees: r.active_employees ?? 0, isActive: r.is_active,
 });
 
 export async function locationRows(tx: Tx, params: LocationListParams, all = false): Promise<Paged<LocationRow>> {
@@ -290,7 +296,7 @@ export async function locationRows(tx: Tx, params: LocationListParams, all = fal
     ...(p.state?.length ? [sql`l.state::text = any(${p.state}::text[])`] : []),
   ]);
   const { limit, offset } = pageOf(p, all);
-  const rows = await sql<LocDb>`select l.*, wp.name as pattern_name from ${LOC_FROM} where ${where}
+  const rows = await sql<LocDb>`select l.*, wp.name as pattern_name, (select count(*)::int from app.employees e where e.work_location_id = l.id and e.status in ('pending_join','on_probation','confirmed','notice_period')) as active_employees from ${LOC_FROM} where ${where}
      order by ${sql.raw(LOC_SORT[p.sort] ?? 'l.name')} ${dirOf(p.dir)}, l.name limit ${limit} offset ${offset}`.execute(tx);
   return { rows: rows.rows.map(mapLoc), total: await count(tx, LOC_FROM, where), page: all ? 1 : p.page, pageSize: all ? EXPORT_LIMIT : p.pageSize };
 }
@@ -303,7 +309,7 @@ export async function listLocations(params: LocationListParams): Promise<Paged<L
 export async function getLocation(id: string): Promise<LocationDetail | null> {
   const { ctx } = await authorize(ORG_ADMIN);
   return withUserTx(ctx, async (tx) => {
-    const r = (await sql<LocDb>`select l.*, wp.name as pattern_name from ${LOC_FROM} where l.id = ${id}::uuid`.execute(tx)).rows[0];
+    const r = (await sql<LocDb>`select l.*, wp.name as pattern_name, (select count(*)::int from app.employees e where e.work_location_id = l.id and e.status in ('pending_join','on_probation','confirmed','notice_period')) as active_employees from ${LOC_FROM} where l.id = ${id}::uuid`.execute(tx)).rows[0];
     if (!r) return null;
     return {
       ...mapLoc(r),
@@ -330,7 +336,7 @@ function mapVersion(v: VerDb, names: Map<string, string>): PatternVersion {
   };
 }
 type PatDb = {
-  id: string; name: string; is_active: boolean; used_by_locations: number; current_version: VerDb | null;
+  id: string; name: string; is_active: boolean; used_by_locations: number; used_by_employees: number; current_version: VerDb | null;
   created_at: Date; created_by: string | null; updated_at: Date; updated_by: string | null;
 };
 const PAT_SORT: Record<string, string> = { name: 'x.name', effectiveFrom: "x.current_version->>'effective_from'" };
@@ -342,6 +348,7 @@ export async function patternRows(tx: Tx, params: PatternListParams, all = false
   const from = sql`(
     select wp.*,
            (select count(*)::int from app.work_locations l where l.default_pattern_id = wp.id and l.is_active) as used_by_locations,
+           (select count(*)::int from app.employees e where e.working_pattern_id = wp.id and e.status in ('pending_join','on_probation','confirmed','notice_period')) as used_by_employees,
            (select to_jsonb(v) || jsonb_build_object('is_future', v.effective_from > app.today_myt())
               from app.working_pattern_versions v where v.pattern_id = wp.id
              order by (v.effective_from <= app.today_myt()) desc,
@@ -355,7 +362,7 @@ export async function patternRows(tx: Tx, params: PatternListParams, all = false
   const names = await resolveNames(tx, rows.rows.map((r) => r.current_version?.created_by));
   return {
     rows: rows.rows.map((r) => ({
-      id: r.id, name: r.name, isActive: r.is_active, usedByLocations: r.used_by_locations, usedByEmployees: null,
+      id: r.id, name: r.name, isActive: r.is_active, usedByLocations: r.used_by_locations, usedByEmployees: r.used_by_employees,
       current: r.current_version ? mapVersion(r.current_version, names) : null,
     })),
     total: await count(tx, from, where), page: all ? 1 : p.page, pageSize: all ? EXPORT_LIMIT : p.pageSize,
@@ -555,10 +562,10 @@ export async function getCostCentre(id: string): Promise<CostCentreDetail | null
 }
 
 // ===========================================================================
-// O10 Employee groups (members → W2-003)
+// O10 Employee groups
 // ===========================================================================
-type GrpDb = { id: string; name: string; description: string | null; is_active: boolean; created_at: Date; created_by: string | null; updated_at: Date; updated_by: string | null };
-const mapGrp = (r: GrpDb): EmployeeGroupRow => ({ id: r.id, name: r.name, description: r.description, memberCount: null, usedBy: null, isActive: r.is_active });
+type GrpDb = { member_count?: number; id: string; name: string; description: string | null; is_active: boolean; created_at: Date; created_by: string | null; updated_at: Date; updated_by: string | null };
+const mapGrp = (r: GrpDb): EmployeeGroupRow => ({ id: r.id, name: r.name, description: r.description, memberCount: r.member_count ?? 0, usedBy: null, isActive: r.is_active });
 
 export async function groupRows(tx: Tx, params: GroupListParams, all = false): Promise<Paged<EmployeeGroupRow>> {
   const p = parseParams(groupListParamsSchema, params);
@@ -566,7 +573,7 @@ export async function groupRows(tx: Tx, params: GroupListParams, all = false): P
   const where = and([...(q ? [sql`(g.name ilike ${q} or g.description ilike ${q})`] : []), ...activeCond('g.is_active', p.active)]);
   const from = sql`app.employee_groups g`;
   const { limit, offset } = pageOf(p, all);
-  const rows = await sql<GrpDb>`select g.* from ${from} where ${where} order by g.name ${dirOf(p.dir)} limit ${limit} offset ${offset}`.execute(tx);
+  const rows = await sql<GrpDb>`select g.*, (select count(*)::int from app.employee_group_members m where m.group_id = g.id) as member_count from ${from} where ${where} order by g.name ${dirOf(p.dir)} limit ${limit} offset ${offset}`.execute(tx);
   return { rows: rows.rows.map(mapGrp), total: await count(tx, from, where), page: all ? 1 : p.page, pageSize: all ? EXPORT_LIMIT : p.pageSize };
 }
 
@@ -578,8 +585,14 @@ export async function listEmployeeGroups(params: GroupListParams): Promise<Paged
 export async function getEmployeeGroup(id: string): Promise<EmployeeGroupDetail | null> {
   const { ctx } = await authorize(ORG_ADMIN);
   return withUserTx(ctx, async (tx) => {
-    const r = (await sql<GrpDb>`select * from app.employee_groups where id = ${id}::uuid`.execute(tx)).rows[0];
-    return r ? { ...mapGrp(r), members: [], ...stamps(r, await resolveNames(tx, [r.created_by, r.updated_by])) } : null;
+    const r = (await sql<GrpDb>`select g.*, (select count(*)::int from app.employee_group_members m where m.group_id = g.id) as member_count
+      from app.employee_groups g where g.id = ${id}::uuid`.execute(tx)).rows[0];
+    if (!r) return null;
+    const members = await sql<{ employee_id: string; full_name: string; employee_no: string }>`
+      select e.id as employee_id, e.full_name, e.employee_no from app.employee_group_members m join app.employees e on e.id = m.employee_id
+       where m.group_id = ${id}::uuid order by e.full_name`.execute(tx);
+    return { ...mapGrp(r), members: members.rows.map((m) => ({ employeeId: m.employee_id, name: m.full_name, employeeNo: m.employee_no })),
+      ...stamps(r, await resolveNames(tx, [r.created_by, r.updated_by])) };
   });
 }
 
@@ -656,3 +669,50 @@ export async function getSystemSettings(): Promise<SystemSettings> {
   });
 }
 
+
+// ===========================================================================
+// O8 Reporting lines (F-ORG-11) — W2-003
+// ===========================================================================
+export async function reportingLines(tx: Tx): Promise<ReportingLines> {
+  const r = await sql<{ id: string; employee_no: string; full_name: string; preferred_name: string | null; title: string; dept: string;
+                        manager_employee_id: string | null; manager_since: string | null; status: ReportingLineNode['status']; is_top: boolean;
+                        mgr_status: string | null; mgr_name: string | null }>`
+    select e.id, e.employee_no, e.full_name, e.preferred_name, p.title, d.name as dept, e.manager_employee_id, e.manager_since,
+           e.status::text as status, coalesce(h.is_top_of_org, false) as is_top, m.status::text as mgr_status, m.full_name as mgr_name
+      from app.employees e join app.positions p on p.id = e.position_id join app.departments d on d.id = e.department_id
+      left join app.employee_hr_private h on h.employee_id = e.id left join app.employees m on m.id = e.manager_employee_id
+     where e.status in ('pending_join','on_probation','confirmed','notice_period')
+     order by e.full_name`.execute(tx);
+  const dele = await sql<{ employee_id: string; delegate_name: string; valid_from: string; valid_to: string; scope: 'leave' | 'claims' | 'both' }>`
+    select u.employee_id, du.display_name as delegate_name, d.valid_from, d.valid_to, d.scope::text as scope
+      from app.delegations d join app.app_users u on u.id = d.delegator_user_id join app.app_users du on du.id = d.delegate_user_id
+     where d.cancelled_at is null and app.today_myt() between d.valid_from and d.valid_to and u.employee_id is not null`.execute(tx);
+  const delegation = new Map(dele.rows.map((x) => [x.employee_id, { delegateName: x.delegate_name, validFrom: x.valid_from, validTo: x.valid_to, scope: x.scope }]));
+  const ids = new Set(r.rows.map((x) => x.id));
+  const children = new Map<string, string[]>();
+  for (const x of r.rows) if (x.manager_employee_id && ids.has(x.manager_employee_id)) children.set(x.manager_employee_id, [...(children.get(x.manager_employee_id) ?? []), x.id]);
+  const indirect = (id: string, seen = new Set<string>()): number => {
+    let n = 0;
+    for (const c of children.get(id) ?? []) { if (seen.has(c)) continue; seen.add(c); n += 1 + indirect(c, seen); }
+    return n;
+  };
+  const nodes: ReportingLineNode[] = r.rows.map((x) => {
+    const direct = children.get(x.id)?.length ?? 0;
+    return {
+      employeeId: x.id, employeeNo: x.employee_no, name: x.preferred_name ? `${x.full_name} (${x.preferred_name})` : x.full_name,
+      position: x.title, department: x.dept, managerId: x.manager_employee_id && ids.has(x.manager_employee_id) ? x.manager_employee_id : null,
+      managerSince: x.manager_since, status: x.status, isTopOfOrg: x.is_top, directCount: direct, indirectCount: indirect(x.id) - direct,
+      delegation: delegation.get(x.id) ?? null,
+    };
+  });
+  return {
+    nodes, roots: nodes.filter((n) => !n.managerId).map((n) => n.employeeId),
+    withoutActiveManager: r.rows.filter((x) => (x.manager_employee_id && !ids.has(x.manager_employee_id)) || (!x.manager_employee_id && !x.is_top))
+      .map((x) => ({ employeeId: x.id, employeeNo: x.employee_no, name: x.full_name, managerName: x.mgr_name, managerStatus: x.mgr_status })),
+  };
+}
+
+export async function getReportingLines(): Promise<ReportingLines> {
+  const { ctx } = await authorize(ORG_ADMIN);
+  return withUserTx(ctx, (tx) => reportingLines(tx));
+}

@@ -18,6 +18,8 @@ export function useListParams<F extends Record<string, string>>(defaults: {
   filters: F;
   rowsPerPage?: number;
   sort?: SortState;
+  /** URL keys owned by the page (e.g. a profile `tab`) carried over unchanged on every list navigation. */
+  preserve?: string[];
 }) {
   const router = useRouter();
   const pathname = usePathname() ?? '';
@@ -46,6 +48,10 @@ export function useListParams<F extends Record<string, string>>(defaults: {
   const push = React.useCallback(
     (next: ListParams<F>) => {
       const sp = new URLSearchParams();
+      for (const k of defaults.preserve ?? []) {
+        const v = search?.get(k);
+        if (v) sp.set(k, v);
+      }
       for (const [k, v] of Object.entries(next.filters)) {
         if (v !== defaults.filters[k]) sp.set(k, v);
       }
@@ -59,7 +65,7 @@ export function useListParams<F extends Record<string, string>>(defaults: {
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router, pathname],
+    [router, pathname, search],
   );
 
   const activeFilterCount = Object.entries(applied.filters).filter(([k, v]) => v !== '' && v !== defaults.filters[k]).length;

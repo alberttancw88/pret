@@ -180,3 +180,25 @@ export async function getDownloadUrl(
   if (error || !data) throw new Error('PRET-ACC-404');
   return { url: data.signedUrl, fileName: file.original_name };
 }
+
+/**
+ * Short-lived (5 min) signed URLs for employee photos (A16): any active user may read photos
+ * (app.storage_read_allowed), so no grant row is needed. Returns storage path → URL; failures are
+ * simply left out (the UI shows initials).
+ */
+export async function signedPhotoUrls(accessToken: string, files: { bucket: string; path: string }[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const byBucket = new Map<string, string[]>();
+  for (const f of files) byBucket.set(f.bucket, [...(byBucket.get(f.bucket) ?? []), f.path]);
+  if (byBucket.size === 0) return out;
+  try {
+    const supabase = createSupabaseUserClient(accessToken);
+    for (const [bucket, paths] of byBucket) {
+      const { data } = await supabase.storage.from(bucket).createSignedUrls([...new Set(paths)], 300);
+      for (const d of data ?? []) if (d.path && d.signedUrl) out.set(d.path, d.signedUrl);
+    }
+  } catch {
+    // photos are decorative — never fail the page
+  }
+  return out;
+}

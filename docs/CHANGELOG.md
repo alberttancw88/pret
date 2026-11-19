@@ -9,6 +9,14 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.7] — 2026-11-19 — Cron key live, Super Admin employee record
+### Changed
+- `CRON_SECRET` set in Vercel; `/api/cron/daily` now rejects unauthenticated calls (401).
+- pret-dev: Super Admin's own employee record created with the reserved id (via
+  `supabase/seed/owner_employee.mjs`, MyKad encrypted, output never saved); FK
+  `fk_app_users_employee` validated; grade, position and Petaling Jaya work location added.
+- Backlog log updated (no personal data in the repo).
+
 ## [0.2.6] — 2026-11-19 — W2-003 Employee master records built
 ### Added
 - Employee records (M1, ADM/SA): employee list with completeness, 6-step new-employee wizard

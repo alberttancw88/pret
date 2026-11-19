@@ -41,3 +41,5 @@ yarn-error.log*
 # Personal account recovery codes / credentials — never commit
 vercel/
 *recovery-codes*
+# Albert's personal folder — never committed, never read by Claude
+/Albert Personal Folder do not Sync/

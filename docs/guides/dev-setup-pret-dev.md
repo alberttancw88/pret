@@ -20,7 +20,7 @@ only into `.env.local`.
 4. **Authentication → Sign In / Providers → Email:** *Allow new users to sign up* **off**
    (staff are invited). Minimum password length **12**, require lower, upper, digits and symbols.
 5. **Authentication → Multi-Factor:** **TOTP (authenticator app) enabled.**
-6. **Project Settings → JWT Keys / Auth:** access-token (JWT) expiry **600 seconds**.
+6. ✅ **Decided 19/11/2026 (D28): leave at the default 3600 seconds.** **Authentication → Sessions → Access Tokens:** access-token (JWT) expiry. *(Originally 600 seconds per ADR-0014.)*
 7. **Authentication → URL Configuration:** Site URL `http://localhost:3000` for dev; add
    redirect URLs `http://localhost:3000/reset-password` and `http://localhost:3000/accept-invite`.
    Recovery link validity 1 hour if offered.

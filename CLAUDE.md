@@ -59,6 +59,10 @@ directly under that agent's mandate and records it in the backlog log.
   GitHub remote: `origin` = github.com/alberttancw88/pret (private).
 - **Secrets:** `info-blank.txt` (if present) holds credentials and is git-ignored —
   never read, echo or commit it. `.env*` files are never committed.
+- **Albert's personal folder:** `Albert Personal Folder do not Sync/` (repo root) holds
+  Albert's own credentials (e.g. recovery codes). Never read, list, edit or commit
+  anything inside it — it is git-ignored and denied in `.claude/settings.local.json`.
+  Specialists are told the same in every dispatch brief.
 - **HR data is personal data (PDPA).** Never put real employee data (NRIC, salary, bank
   account, medical info) in seed files, tests, fixtures, docs or commits. Use synthetic
   data only. Kakitangan exports Albert provides go in `docs/reference/` only if

@@ -9,6 +9,14 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.5] — 2026-11-19 — Token lifetime decision, personal-folder rule
+### Added
+- Decision D28: Supabase access-token lifetime stays at 1 hour (replaces 10 minutes in
+  ADR-0014); PRET's live role checks and idle sign-out still apply.
+- `CLAUDE.md` rule and `.gitignore` entry: Albert's personal folder is never read or committed.
+### Changed
+- Dev setup guide step 6 closed (D28); backlog log: idle sign-out confirmed on the live site.
+
 ## [0.2.4] — 2026-11-19 — PRET live on Vercel
 ### Added
 - Decision D27: Supabase and Vercel on free tiers only, for dev and the live version

@@ -9,7 +9,7 @@ import Typography from '@mui/material/Typography';
 
 const LOGO_ALT = 'Interact — Business through Technology';
 
-export default function AuthSplitLayout({ children }: { children: React.ReactNode }) {
+export default function AuthSplitLayout({ children, version }: { children: React.ReactNode; version: string }) {
   return (
     <Box sx={{ minHeight: '100dvh', display: 'flex', bgcolor: 'background.paper' }}>
       <Box
@@ -30,6 +30,9 @@ export default function AuthSplitLayout({ children }: { children: React.ReactNod
         <img src="/brand/interact-logo.png" alt={LOGO_ALT} style={{ width: 160, height: 'auto' }} />
         <Typography variant="h1" component="p" sx={{ mt: 2 }}>
           PRET
+        </Typography>
+        <Typography variant="body2" component="p" color="text.secondary" sx={{ mt: -1.5 }}>
+          v{version}
         </Typography>
         <Typography variant="h5" component="p" color="text.secondary">
           HR &amp; Payroll
@@ -53,6 +56,9 @@ export default function AuthSplitLayout({ children }: { children: React.ReactNod
             <img src="/brand/interact-logo.png" alt={LOGO_ALT} style={{ width: 140, height: 'auto' }} />
             <Typography variant="h5" component="p" sx={{ mt: 1 }}>
               PRET
+            </Typography>
+            <Typography variant="caption" component="p" color="text.secondary">
+              v{version}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               HR &amp; Payroll

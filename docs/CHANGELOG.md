@@ -9,6 +9,11 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.9] — 2026-11-20 — Version number on the sign-in page
+### Added
+- Sign-in page shows the app version below "PRET" (desktop brand panel and phone header),
+  read from `package.json` on the server.
+
 ## [0.2.8] — 2026-11-20 — W2-004 Leave management built
 ### Added
 - Leave setup (ADM/SA): leave types with Employment Act minimum warning, service-band

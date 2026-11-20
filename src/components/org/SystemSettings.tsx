@@ -259,7 +259,7 @@ export default function SystemSettings({ settings }: { settings: Settings }) {
             </FormGrid>
           </FormCard>
 
-          <LinkCard id="leave" title="Leave" body="Leave policy settings (Admin and Super Admin edit)." href="/admin/leave/setup" label="Open leave settings" />
+          <LinkCard id="leave" title="Leave" body="Leave policy settings (Admin and Super Admin edit)." href="/leave/setup/policy" label="Open leave settings" />
           <LinkCard id="claims" title="Claims" body="Claims settings (Admin and Super Admin edit; batch approval is the Super Admin setting above)." href="/admin/claims/setup" label="Open claims settings" />
           <Card id="payroll" component="section" aria-labelledby="payroll-h">
             <CardContent sx={{ p: { xs: 2, sm: 3 } }}>

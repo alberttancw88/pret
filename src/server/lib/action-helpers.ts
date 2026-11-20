@@ -98,6 +98,36 @@ const CODE_MESSAGES: Record<string, { message?: string; field?: string }> = {
   'PRET-CR-EFFECTIVE': { field: 'effectiveDate' },
   'PRET-CR-REMARKS': { field: 'remarks' },
   'PRET-STALE': { message: 'This record changed since you opened it — refresh and try again.' },
+  // W2-004 leave + approvals
+  'PRET-LV-NO-EMPLOYEE': { message: 'Your employee record has not been created yet.' },
+  'PRET-LV-STATE': { message: undefined },
+  'PRET-LV-REASON': { field: 'reason' },
+  'PRET-LV-CANCEL-REQUEST': { message: 'This leave has started (or self-cancel is off) — use REQUEST CANCELLATION instead.' },
+  'PRET-LV-FILES': { message: 'At most 3 attachments.', field: 'fileIds' },
+  'PRET-LV-FLOOR': { field: 'statutoryFloor' },
+  'PRET-LV-BANDS': { message: 'Bands must run from 0 years with no gaps or overlaps.', field: 'rows' },
+  'PRET-LV-STATUTORY-ACTIVE': { field: 'isActive' },
+  'PRET-LV-CATEGORY-LOCKED': { message: 'The category cannot change once the type has been used.', field: 'category' },
+  'PRET-LV-OPENING-DONE': { message: 'Opening balances were already entered — use a balance adjustment.' },
+  'PRET-LV-RANGE': { message: 'The date range is too long.', field: 'endDate' },
+  'PRET-WF-IN-USE': { message: 'This workflow is assigned to an active leave type.', field: 'isActive' },
+  'PRET-WF-LEVELS': { message: 'Levels must run 1, 2, 3 without gaps.', field: 'levels' },
+  'PRET-TASK-DECIDED': { message: undefined },
+  'PRET-TASK-NOT-YOURS': { message: 'This item is not waiting for you.' },
+  'PRET-TASK-COMMENT': { message: 'Add a comment to reject.', field: 'comment' },
+  'PRET-TASK-OVERRIDE': { message: 'Give the reason for the Admin override.', field: 'comment' },
+  'PRET-REASSIGN-REASON': { message: 'Give the reason (at least 10 characters).', field: 'reason' },
+  'PRET-REASSIGN-TARGET': { message: 'The new approver must be an active employee user.', field: 'toUserId' },
+  'PRET-RL-WORKING-DAY': { field: 'dateWorked' },
+  'PRET-RL-DUPLICATE': { field: 'dateWorked' },
+  'PRET-RL-WINDOW': { field: 'dateWorked' },
+  'PRET-RL-FUTURE': { field: 'dateWorked' },
+  'PRET-RL-STATE': { message: undefined },
+  'PRET-RL-TYPE': { message: 'Replacement leave is not set up yet. Please contact HR.' },
+  'PRET-ROLLOVER-BLOCKED': { message: undefined },
+  'PRET-ROLLOVER-STALE': { message: 'Preview the roll-over again before running it.' },
+  'PRET-DLG-DELEGATE': { message: 'The delegate must be an active employee user.', field: 'delegateUserId' },
+  'PRET-DLG-CANCEL-ONLY': { message: 'Delegations can only be ended.' },
 };
 
 const CONSTRAINT_FIELDS: Record<string, { field: string; message: string }> = {
@@ -134,6 +164,19 @@ const CONSTRAINT_FIELDS: Record<string, { field: string; message: string }> = {
   chk_zakat: { field: 'zakatMonthlyAmount', message: 'Enter the zakat amount and account no.' },
   chk_ptptn: { field: 'ptptnStartDate', message: 'Enter the PTPTN start and end dates.' },
   chk_bank_transfer_fields: { field: 'proofFileId', message: 'Bank, account type, account no., holder name and proof are required for bank transfer.' },
+  // W2-004
+  ex_leave_no_overlap: { field: 'startDate', message: 'You already have leave on one of these dates.' },
+  ux_leave_types_code: { field: 'code', message: 'This code is already in use.' },
+  ux_leave_types_name: { field: 'name', message: 'This name is already in use.' },
+  ux_one_active_statutory_type: { field: 'category', message: 'Only one active leave type per statutory category (BR-LV-01).' },
+  ux_approval_workflows_name: { field: 'name', message: 'This name is already in use.' },
+  ux_entitlement_override: { field: 'year', message: 'This employee already has an override for this type and year — edit it instead.' },
+  ux_credit_per_date: { field: 'dateWorked', message: 'You already have a credit for this date.' },
+  chk_adjust_reason: { field: 'reason', message: 'Reason must be at least 10 characters.' },
+  chk_half_steps: { field: 'days', message: 'Use ½-day steps.' },
+  ex_band_overlap: { field: 'rows', message: 'Bands overlap.' },
+  chk_reject_comment: { field: 'comment', message: 'Add a comment to reject.' },
+  chk_not_self_decision: { field: 'form', message: "You can't decide your own request." },
 };
 
 function sentence(s: string): string {
@@ -144,7 +187,7 @@ function sentence(s: string): string {
 }
 
 /** Maps any error thrown inside an action to an ActionFail (never leaks SQL). */
-export function dbFail(err: unknown, fieldOverrides: Record<string, string> = {}): ActionFail {
+export function dbFail(err: unknown, fieldOverrides: Record<string, string> = {}, codeMessages: Record<string, string> = {}): ActionFail {
   const e = err as { constraint?: string; code?: string; message?: string };
   if (e?.constraint && CONSTRAINT_FIELDS[e.constraint]) {
     const c = CONSTRAINT_FIELDS[e.constraint]!;
@@ -158,7 +201,7 @@ export function dbFail(err: unknown, fieldOverrides: Record<string, string> = {}
     console.error('[pret] action error', e?.code ?? '', (e?.message ?? '').slice(0, 300));
     return fail(UNEXPECTED);
   }
-  const message = known?.message ?? sentence(p.message && p.message !== p.code ? p.message : UNEXPECTED);
+  const message = codeMessages[p.code] ?? known?.message ?? sentence(p.message && p.message !== p.code ? p.message : UNEXPECTED);
   const field = known?.field ? fieldOverrides[known.field] ?? known.field : undefined;
   return field ? fail(message, { [field]: message }) : fail(message);
 }
@@ -186,6 +229,7 @@ export async function runAction<S extends z.ZodTypeAny, R extends object>(
   input: Input,
   fn: (data: z.output<S>, a: Authorized) => Promise<R | ActionFail>,
   fieldOverrides?: Record<string, string>,
+  codeMessages?: Record<string, string>,
 ): Promise<{ ok: true } & R | ActionFail> {
   const a = await authorize(roles);
   const parsed = schema.safeParse(toObject(input));
@@ -195,7 +239,7 @@ export async function runAction<S extends z.ZodTypeAny, R extends object>(
     if ((r as ActionFail).ok === false) return r as ActionFail;
     return { ok: true as const, ...(r as R) };
   } catch (e) {
-    return dbFail(e, fieldOverrides);
+    return dbFail(e, fieldOverrides, codeMessages);
   }
 }
 

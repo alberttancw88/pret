@@ -21,7 +21,8 @@ import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import StatusChip, { type StatusValue } from '../StatusChip';
+import StatusChip, { chipSx, type StatusValue } from '../StatusChip';
+import type { ToneName } from '@/theme/augment';
 import MoneyText from '../MoneyText';
 import DateText from '../DateText';
 import EmptyState from '../EmptyState';
@@ -37,22 +38,33 @@ export type LeaveBalance = {
   allowedNegative?: number;
   expiring?: { days: number; date: string };
   colorIndex: number;
+  /** LT32 colour (W2-004); falls back to the palette index. */
+  colour?: string;
+  /** tile target (W2-004: the P6 ledger for that type). */
+  href?: string;
+  /** label shown instead of a number for types without a balance ("98 consecutive days per confinement"). */
+  noBalanceLabel?: string;
 };
 
 export type PendingItem =
   | { ref: string; href: string; label: string; set: 'leave'; status: StatusValue<'leave'> }
   | { ref: string; href: string; label: string; set: 'claim'; status: StatusValue<'claim'> }
   | { ref: string; href: string; label: string; set: 'changeRequest'; status: StatusValue<'changeRequest'> }
-  | { ref: string; href: string; label: string; set: 'credit'; status: StatusValue<'credit'> };
+  | { ref: string; href: string; label: string; set: 'credit'; status: StatusValue<'credit'> }
+  /** W2-004 live items: label + tone from the server. */
+  | { ref: string; href: string; label: string; set: 'generic'; status: string; tone: string };
 
 export type HomeData = {
   balances: LeaveBalance[];
   pendingClaims: { count: number; amount: number };
   pendingItems: PendingItem[];
-  upcomingLeave: { id: string; type: string; colorIndex: number; from: string; to: string; days: number }[];
+  upcomingLeave: { id: string; type: string; colorIndex: number; from: string; to: string; days: number | string; colour?: string; href?: string }[];
   holidays: { date: string; name: string; weekday: string; state: string }[];
+  /** "Holiday calendar for {year} not yet published" (W2-004 Q-F3) */
+  holidaysNote?: string | null;
   recentClaims: { ref: string; href: string; title: string; total: number; status: StatusValue<'claim'> }[];
-  manager: { approvals: number; onLeaveToday: number; onLeaveWeek: number; probationDue: number; teamClaimsSubmitted: number } | null;
+  /** null values render "—" (not yet available: probation due → team page, claims → W2-005). */
+  manager: { approvals: number; onLeaveToday: number; onLeaveWeek: number; probationDue: number | null; teamClaimsSubmitted: number | null } | null;
 };
 
 export type EmployeeHomeProps = {
@@ -60,6 +72,8 @@ export type EmployeeHomeProps = {
   roleLabel: string;
   data: HomeData;
   placeholder?: boolean;
+  /** Claims parts (pending claims, recent claims) arrive with W2-005. */
+  claimsDeferred?: boolean;
 };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -83,14 +97,14 @@ function CardTitle({ title, href, linkLabel = 'See all' }: { title: string; href
 function BalanceCard({ b }: { b: LeaveBalance }) {
   return (
     <Card sx={{ height: '100%', scrollSnapAlign: 'start' }}>
-      <CardActionArea component={NextLink} href={`/leave/balances?type=${encodeURIComponent(b.id)}`} sx={{ height: '100%' }}>
+      <CardActionArea component={NextLink} href={b.href ?? '/my/leave/balances'} sx={{ height: '100%' }}>
         <Box sx={{ display: 'flex', height: '100%' }}>
-          <Box aria-hidden sx={(t) => ({ width: 4, flexShrink: 0, bgcolor: t.palette.leaveType[b.colorIndex % t.palette.leaveType.length] })} />
+          <Box aria-hidden sx={(t) => ({ width: 4, flexShrink: 0, bgcolor: b.colour ?? t.palette.leaveType[b.colorIndex % t.palette.leaveType.length] })} />
           <Box sx={{ p: 2, flex: 1, minWidth: 0 }}>
             <Stack direction="row" spacing={1} alignItems="center">
               <Box
                 aria-hidden
-                sx={(t) => ({ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, bgcolor: t.palette.leaveType[b.colorIndex % t.palette.leaveType.length] })}
+                sx={(t) => ({ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, bgcolor: b.colour ?? t.palette.leaveType[b.colorIndex % t.palette.leaveType.length] })}
               />
               <Typography variant="body2" fontWeight={600} noWrap>
                 {b.name}
@@ -98,7 +112,7 @@ function BalanceCard({ b }: { b: LeaveBalance }) {
             </Stack>
             {b.available === null ? (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                Approval only
+                {b.noBalanceLabel ?? 'Approval only'}
               </Typography>
             ) : (
               <>
@@ -152,7 +166,7 @@ function QuickActions() {
         <CardTitle title="Quick actions" />
         <Grid container spacing={1.5}>
           <Grid size={6}>
-            <Button fullWidth variant="contained" component={NextLink} href="/leave/apply" startIcon={<EventAvailableOutlinedIcon />} sx={btn}>
+            <Button fullWidth variant="contained" component={NextLink} href="/my/leave/apply" startIcon={<EventAvailableOutlinedIcon />} sx={btn}>
               Apply leave
             </Button>
           </Grid>
@@ -167,7 +181,7 @@ function QuickActions() {
               variant="outlined"
               color="inherit"
               component={NextLink}
-              href="/leave/credits/new"
+              href="/my/leave/credits/new"
               startIcon={<SwapHorizOutlinedIcon />}
               sx={{ ...btn, lineHeight: 1.3 }}
             >
@@ -193,7 +207,7 @@ function ManagerPanel({ m }: { m: NonNullable<HomeData['manager']> }) {
     { label: 'Approvals waiting', value: m.approvals, href: '/approvals', accent: m.approvals > 0 ? '#5A5FF2' : '#8F95A3' },
     { label: 'Team on leave today', value: m.onLeaveToday, href: '/team/leave?when=today', accent: '#8F95A3' },
     { label: 'Team on leave this week', value: m.onLeaveWeek, href: '/team/leave?when=week', accent: '#8F95A3' },
-    { label: 'Probation due in team', value: m.probationDue, href: '/team', accent: m.probationDue > 0 ? '#B45309' : '#8F95A3' },
+    { label: 'Probation due in team', value: m.probationDue, href: '/team', accent: (m.probationDue ?? 0) > 0 ? '#B45309' : '#8F95A3' },
     { label: 'Team claims submitted', value: m.teamClaimsSubmitted, href: '/team/claims?status=Submitted', accent: '#8F95A3' },
   ];
   return (
@@ -223,7 +237,7 @@ function ManagerPanel({ m }: { m: NonNullable<HomeData['manager']> }) {
                   {r.label}
                 </Typography>
                 <Typography className="pret-tnum" sx={{ fontSize: '1.25rem', lineHeight: 1.4, fontWeight: 700, color: r.value ? 'text.primary' : 'text.secondary' }}>
-                  {r.value}
+                  {r.value ?? '—'}
                 </Typography>
                 <ChevronRightIcon aria-hidden sx={{ fontSize: 18, color: '#4548C9' }} />
               </Box>
@@ -235,7 +249,7 @@ function ManagerPanel({ m }: { m: NonNullable<HomeData['manager']> }) {
   );
 }
 
-export default function EmployeeHome({ displayName, roleLabel, data, placeholder }: EmployeeHomeProps) {
+export default function EmployeeHome({ displayName, roleLabel, data, placeholder, claimsDeferred }: EmployeeHomeProps) {
   const pendingChip = (p: PendingItem) => {
     switch (p.set) {
       case 'leave':
@@ -246,6 +260,14 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
         return <StatusChip set="changeRequest" value={p.status} />;
       case 'credit':
         return <StatusChip set="credit" value={p.status} />;
+      case 'generic':
+        return (
+          <Chip
+            size="small"
+            label={p.status}
+            sx={[chipSx((['grey', 'indigo', 'success', 'info', 'warning', 'error', 'purple'].includes(p.tone) ? p.tone : 'grey') as ToneName, 'filled'), { height: 24, borderRadius: '6px', fontWeight: 600, fontSize: '0.75rem' }]}
+          />
+        );
     }
   };
 
@@ -273,7 +295,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
         <Grid size={{ xs: 12, md: 8 }}>
           <Stack spacing={3}>
             <Box component="section" aria-label="Leave balances">
-              <CardTitle title="Leave balances" href="/leave/balances" linkLabel="All" />
+              <CardTitle title="Leave balances" href="/my/leave/balances" linkLabel="All" />
               {data.balances.length === 0 ? (
                 <Card>
                   <EmptyState title="No leave types available yet — contact HR" minHeight={120} />
@@ -311,22 +333,26 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
 
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 5 }}>
-                <KpiTile
-                  label="Pending claims"
-                  value={data.pendingClaims.count}
-                  tone={data.pendingClaims.count > 0 ? 'warning' : 'grey'}
-                  href="/claims?status=Submitted"
-                  subLine={
-                    <>
-                      <MoneyText amount={data.pendingClaims.amount} /> awaiting approval
-                    </>
-                  }
-                />
+                {claimsDeferred ? (
+                  <KpiTile label="Pending claims" value="—" tone="grey" subLine="Claims arrive with W2-005" />
+                ) : (
+                  <KpiTile
+                    label="Pending claims"
+                    value={data.pendingClaims.count}
+                    tone={data.pendingClaims.count > 0 ? 'warning' : 'grey'}
+                    href="/claims?status=Submitted"
+                    subLine={
+                      <>
+                        <MoneyText amount={data.pendingClaims.amount} /> awaiting approval
+                      </>
+                    }
+                  />
+                )}
               </Grid>
               <Grid size={{ xs: 12, sm: 7 }}>
                 <Card sx={{ height: '100%' }}>
                   <CardContent>
-                    <CardTitle title="My pending items" href="/leave/applications?status=pending" />
+                    <CardTitle title="My pending items" href="/my/leave?statuses=pending,cancellation_pending" />
                     {data.pendingItems.length === 0 ? (
                       <Typography variant="body2" color="text.secondary">
                         Nothing pending
@@ -362,7 +388,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
 
             <Card>
               <CardContent>
-                <CardTitle title="Upcoming leave" href="/leave/applications" />
+                <CardTitle title="Upcoming leave" href="/my/leave" />
                 {data.upcomingLeave.length === 0 ? (
                   <Typography variant="body2" color="text.secondary">
                     No upcoming leave.
@@ -380,10 +406,17 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
                       >
                         <Box
                           aria-hidden
-                          sx={(t) => ({ width: 10, height: 10, borderRadius: '50%', bgcolor: t.palette.leaveType[l.colorIndex % t.palette.leaveType.length] })}
+                          sx={(t) => ({ width: 10, height: 10, borderRadius: '50%', bgcolor: l.colour ?? t.palette.leaveType[l.colorIndex % t.palette.leaveType.length] })}
                         />
                         <Typography variant="body2" sx={{ flex: 1 }}>
-                          {l.type} · <DateText value={l.from} /> – <DateText value={l.to} />
+                          {l.href ? (
+                            <Link component={NextLink} href={l.href}>
+                              {l.type}
+                            </Link>
+                          ) : (
+                            l.type
+                          )}{' '}
+                          · <DateText value={l.from} /> – <DateText value={l.to} />
                         </Typography>
                         <Typography variant="body2" className="pret-tnum" color="text.secondary">
                           {formatDays(l.days)}
@@ -411,10 +444,10 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
 
             <Card>
               <CardContent>
-                <CardTitle title="Public holidays" href="/leave/holidays" />
+                <CardTitle title="Public holidays" href="/leave/calendar" />
                 {data.holidays.length === 0 ? (
                   <Typography variant="body2" color="text.secondary">
-                    The calendar has not been published yet.
+                    {data.holidaysNote ?? 'The calendar has not been published yet.'}
                   </Typography>
                 ) : (
                   <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0 }}>
@@ -463,8 +496,12 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
 
             <Card>
               <CardContent>
-                <CardTitle title="Recent claims" href="/claims" />
-                {data.recentClaims.length === 0 ? (
+                <CardTitle title="Recent claims" href={claimsDeferred ? undefined : '/claims'} />
+                {claimsDeferred ? (
+                  <Typography variant="body2" color="text.secondary">
+                    Claims arrive with the claims module (W2-005).
+                  </Typography>
+                ) : data.recentClaims.length === 0 ? (
                   <Typography variant="body2" color="text.secondary">
                     No claims yet.
                   </Typography>

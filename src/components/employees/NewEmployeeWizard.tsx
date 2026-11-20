@@ -2,7 +2,7 @@
 
 // E2 · New employee — S-EM-02 · /employees/new · F-EMP-02/04/05/06/07/09/14/16 · US-EMP-001, 002.
 // Stepper: (1 Identity) — (2 Contact & emergency) — (3 Employment) — (4 Statutory & bank) —
-// (5 Opening leave → W2-004) — (6 Review & invite). NEXT validates the step (contract zod
+// (5 Opening leave — F-LV-35, W2-004) — (6 Review & invite). NEXT validates the step (contract zod
 // schema, the same one the server uses); BACK keeps data; CREATE EMPLOYEE only on step 6 —
 // the record is created atomically. Steps 4 and 5 may be skipped.
 // Photo (A16) and bank proof (I6) need the new employee id for the private Storage path, so
@@ -84,9 +84,11 @@ import { KVGrid } from './ui';
 import { addressText, newIdempotencyKey, yesNo } from './labels';
 import { PHOTO_ACCEPT, uploadEmployeeFile } from './upload';
 import { addDays, formatDate, todayMyt } from '@/lib/format';
+import type { OpeningLeaveForm } from '@/server/contracts/leave';
+import OpeningLeaveStep, { EMPTY_OPENING, openingLeavePayload, type OpeningLeaveValue } from '../leave/OpeningLeaveStep';
 
 const STEPS = ['Identity', 'Contact & emergency', 'Employment', 'Statutory & bank', 'Opening leave', 'Review & invite'];
-const STEP_PREFIX: string[][] = [['identity'], ['contact', 'emergencyContacts'], ['employment'], ['statutory', 'employerFlags', 'bank'], [], ['invite']];
+const STEP_PREFIX: string[][] = [['identity'], ['contact', 'emergencyContacts'], ['employment'], ['statutory', 'employerFlags', 'bank'], ['openingLeave'], ['invite']];
 const PLACEHOLDER_UUID = '00000000-0000-4000-8000-000000000000';
 
 const LABELS: Record<string, string> = {
@@ -139,6 +141,8 @@ export default function NewEmployeeWizard({
   const [statutory, setStatutory] = React.useState<StatutoryForm>(EMPTY_STATUTORY);
   const [flags, setFlags] = React.useState<FlagsForm>({ ...EMPTY_FLAGS });
   const [bank, setBank] = React.useState<BankForm>(emptyBank(today));
+  const [opening, setOpening] = React.useState<OpeningLeaveValue>(EMPTY_OPENING);
+  const [openingForm, setOpeningForm] = React.useState<OpeningLeaveForm | null>(null);
   const [inviteMode, setInviteMode] = React.useState<'now' | 'scheduled' | 'later'>('scheduled');
   const [inviteDate, setInviteDate] = React.useState('');
   const [mykadInfo, setMykadInfo] = React.useState<CheckMykadResult | null>(null);
@@ -208,6 +212,7 @@ export default function NewEmployeeWizard({
     employerFlags: flagsPayload(flags),
     ...(forValidation && bankFilled(bank) ? { bank: bankPayload(bank, bank.proof ? PLACEHOLDER_UUID : null) } : {}),
     invite: { mode: inviteMode, scheduledSendDate: inviteMode === 'scheduled' ? effectiveInviteDate : null },
+    openingLeave: openingLeavePayload(opening, openingForm),
     idempotencyKey: idem,
   });
 
@@ -426,10 +431,16 @@ export default function NewEmployeeWizard({
         );
       case 4:
         return (
-          <Alert severity="info" variant="outlined">
-            Opening leave (taken this year, carry-forward remaining, replacement credits) is entered with the leave module — available after W2-004. You can
-            add it later from the employee&apos;s Leave tab. Continue to review.
-          </Alert>
+          <OpeningLeaveStep
+            joinDate={employment.joinDate}
+            continuousServiceDate={employment.continuousServiceDate}
+            gradeId={employment.gradeId}
+            gender={identity.gender}
+            value={opening}
+            onChange={setOpening}
+            onForm={setOpeningForm}
+            errors={sub(errors, 'openingLeave')}
+          />
         );
       default:
         return (
@@ -513,6 +524,28 @@ export default function NewEmployeeWizard({
                   },
                 ]}
               />
+            </Box>
+            <Box>
+              <Typography variant="h6" component="h3">
+                Opening leave <EditLink to={4} />
+              </Typography>
+              {(() => {
+                const ol = openingLeavePayload(opening, openingForm);
+                if (!ol) return <Typography color="text.secondary">None entered.</Typography>;
+                const name = (id: string) => openingForm?.rows.find((r) => r.leaveType.id === id)?.leaveType.name ?? '';
+                return (
+                  <KVGrid
+                    items={[
+                      ...(ol.rows ?? []).map((r) => ({
+                        label: name(r.leaveTypeId),
+                        value: `Taken ${Number(r.takenThisYear ?? 0).toFixed(1)}${Number(r.carryForward ?? 0) > 0 ? ` · carry-forward ${Number(r.carryForward).toFixed(1)} (expires ${formatDate(String(r.carryForwardExpiry ?? ''))})` : ''}`,
+                      })),
+                      { label: 'Replacement credits', value: `${(ol.credits ?? []).length}`, hidden: !(ol.credits ?? []).length },
+                      { label: 'Paternity occurrences used', value: String(ol.paternityOccurrencesUsed ?? 0), hidden: !Number(ol.paternityOccurrencesUsed ?? 0) },
+                    ]}
+                  />
+                );
+              })()}
             </Box>
             <Card variant="outlined">
               <CardContent>

@@ -12,6 +12,8 @@ import {
   listHrNotes,
 } from '@/server/queries/employees';
 import { getOrgOptions } from '@/server/queries/org';
+import { getEmployeeLeave, getLeaveSetupOptions } from '@/server/queries/leave';
+import { yearOrUndef } from '@/components/leave/filters';
 import {
   ACTIVITY_EVENT_TYPES,
   CR_STATUSES,
@@ -63,6 +65,10 @@ export default async function EmployeeProfilePage({ params, searchParams }: { pa
     data.documents = { rows: res.rows, total: res.total, params: { employeeId: profile.id } };
   }
   if (tab === 'notes') data.notes = await listHrNotes(profile.id);
+  if (tab === 'leave') {
+    const [leaveTab, setup] = await Promise.all([getEmployeeLeave(profile.id, yearOrUndef(spValue(sp, 'year') ?? '')), getLeaveSetupOptions()]);
+    data.leave = { tab: leaveTab, types: setup.leaveTypes, currentYear: setup.currentYear };
+  }
   if (tab === 'change_requests') {
     const res = await listChangeRequests({ employeeId: profile.id, statuses: [...CR_STATUSES], page: 1, pageSize: 100, sort: 'submittedAt', dir: 'desc' });
     data.changeRequests = { rows: res.rows, total: res.total };

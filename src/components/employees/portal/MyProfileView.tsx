@@ -146,7 +146,15 @@ export default function MyProfileView({ me }: { me: MyProfile }) {
         </SectionCard>
       )}
       {tab === 'leave' && (
-        <TabPlaceholder title="Available after W2-004" body="Your leave balances and applications arrive with the leave module." />
+        <TabPlaceholder
+          title="My leave"
+          body="Your leave balances, applications and replacement credits."
+          links={[
+            { label: 'My balances', href: '/my/leave/balances' },
+            { label: 'My applications', href: '/my/leave' },
+            { label: 'Apply leave', href: '/my/leave/apply' },
+          ]}
+        />
       )}
       {tab === 'claims' && <TabPlaceholder title="Available after W2-005" body="Your claims arrive with the claims module." />}
       {tab === 'documents' && <TabPlaceholder title="My documents" body="Documents HR has shared with you." links={[{ label: 'Open my documents', href: '/my/documents' }]} />}

@@ -38,6 +38,9 @@ import {
 import StatusChip from '../../StatusChip';
 import PageTitle from '../../shell/PageTitle';
 import { ProfileTabs, TabPlaceholder, useTabParam, type TabDef } from '../ui';
+import type { EmployeeLeaveTab } from '@/server/contracts/leave';
+import { EmployeeLeaveTabView } from '../../leave/EmployeeLeave';
+import type { SetupType } from '../../leave/AdjustOverride';
 import { CompletenessBadge, EmploymentStatusChip, dateOr } from '../labels';
 import type { ProfileCtx } from './context';
 import { revealer } from './context';
@@ -57,6 +60,8 @@ export type ProfileTabData = {
   notes: HrNote[] | null;
   activity: { view: 'events' | 'fields'; rows: (ActivityRow | FieldChangeRow)[]; total: number; params: ActivityParams } | null;
   changeRequests: { rows: ChangeRequestRow[]; total: number } | null;
+  /** W2-004 Leave tab (loaded only when the tab is open) */
+  leave?: { tab: EmployeeLeaveTab | null; types: SetupType[]; currentYear: number } | null;
 };
 
 const PORTAL_CHIP: Partial<Record<PortalAccountState, 'Invited' | 'Active' | 'Disabled'>> = {
@@ -83,7 +88,7 @@ export default function EmployeeProfileView({ ctx, data }: { ctx: ProfileCtx; da
     { value: 'compensation', label: 'Compensation', hint: 'Release 1.1' },
     { value: 'payslips', label: 'Payslips', hint: 'Release 1.1' },
     { value: 'bank', label: 'Bank' },
-    { value: 'leave', label: 'Leave' },
+    { value: 'leave', label: 'Leave', count: profile.openItems.pendingLeave + profile.openItems.pendingCredits || null },
     { value: 'claims', label: 'Claims' },
     { value: 'documents', label: 'Documents' },
     { value: 'change_requests', label: 'Change requests', count: profile.openItems.changeRequests || null },
@@ -110,9 +115,9 @@ export default function EmployeeProfileView({ ctx, data }: { ctx: ProfileCtx; da
     { label: 'Withdraw resignation', onClick: () => setDlg('withdraw'), show: can.withdrawResignation },
     { label: 'Withdraw offer', onClick: () => setDlg('offer'), show: can.withdrawOffer },
     { label: 'Rehire', href: `/employees/${no}/rehire`, show: can.rehire },
-    { label: 'Apply leave on behalf', disabled: 'Available after W2-004', show: true },
+    { label: 'Apply leave on behalf', href: `/leave/apply-on-behalf?employee=${encodeURIComponent(profile.id)}`, show: !profile.isOwnRecord },
     { label: 'Submit claim on behalf', disabled: 'Available after W2-005', show: true },
-    { label: 'Adjust leave balance', disabled: 'Available after W2-004', show: !profile.isOwnRecord },
+    { label: 'Adjust leave balance', href: `${pathname}?tab=leave&action=adjust`, show: !profile.isOwnRecord },
     { label: 'Add HR note', onClick: () => setDlg('note'), show: can.addNote },
   ];
   const editTargets: { label: string; tab: string; show: boolean }[] = [
@@ -145,7 +150,9 @@ export default function EmployeeProfileView({ ctx, data }: { ctx: ProfileCtx; da
       case 'bank':
         return <BankTab profile={profile} banks={ctx.formOptions.banks} revealMode={ctx.revealMode} />;
       case 'leave':
-        return <TabPlaceholder title="Available after W2-004" body={profile.placeholders.leave || 'Leave balances, applications, replacement credits and overrides for this employee arrive with the leave module (W2-004).'} />;
+        return data.leave ? (
+          <EmployeeLeaveTabView tab={data.leave.tab} types={data.leave.types} currentYear={data.leave.currentYear} isSuperAdmin={ctx.isSuperAdmin} isOwnRecord={profile.isOwnRecord} />
+        ) : null;
       case 'claims':
         return <TabPlaceholder title="Available after W2-005" body={profile.placeholders.claims || 'Claims for this employee arrive with the claims module (W2-005).'} />;
       case 'documents':
@@ -159,7 +166,7 @@ export default function EmployeeProfileView({ ctx, data }: { ctx: ProfileCtx; da
       case 'activity':
         return data.activity ? <ActivityTab view={data.activity.view} rows={data.activity.rows} total={data.activity.total} params={data.activity.params} canExport={can.exportActivity} /> : null;
       default:
-        return <OverviewTab profile={profile} tabHref={tabHref} leavePlaceholder={profile.placeholders.leave || 'Available after W2-004.'} />;
+        return <OverviewTab profile={profile} tabHref={tabHref} />;
     }
   })();
 

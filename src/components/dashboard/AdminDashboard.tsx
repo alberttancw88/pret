@@ -101,7 +101,7 @@ export default function AdminDashboard({ data, placeholder }: { data: AdminDashb
       <DashboardSection title="HR">
         <Box sx={GRID_SX}>
           <KpiTile label="Active headcount" value={hr.headcount} tone="indigo" href="/employees" />
-          <KpiTile label="On leave today" value={hr.onLeaveToday} tone="info" href="/admin/leave/calendar?when=today" />
+          <KpiTile label="On leave today" value={hr.onLeaveToday} tone="info" href="/leave/applications?when=today" />
           <KpiTile
             label="Pending leave approvals"
             value={hr.pendingLeave}

@@ -3,7 +3,7 @@
 // E7 · Record separation — S-EM-07 · /employees/{no}/separation · F-EMP-12 · US-EMP-011.
 // Left: form G1–G9. Right: live impact panel (getSeparationPreview): status after save,
 // notice required + basis (EA s12 / contractual), expected LWD, shortfall, reportees needing a
-// new manager; leave position at LWD / approvals re-routed / open claims arrive with W2-004/005.
+// new manager; leave position at LWD (F-LV-27) and approvals to re-route (W2-004); open claims arrive with W2-005.
 // Editing later: same screen with SAVE CHANGES.
 import * as React from 'react';
 import NextLink from 'next/link';
@@ -30,7 +30,7 @@ import ErrorSummary from '../forms/ErrorSummary';
 import { CheckboxInput, DateInput, FormGrid, SelectInput, TextInput } from '../forms/fields';
 import { useActionRunner } from '../forms/useActionRunner';
 import ConfirmDialog from '../dialogs/ConfirmDialog';
-import { KVGrid } from './ui';
+import { KVGrid, MiniTable } from './ui';
 import { optionsOf } from './labels';
 import { addDays, formatDate, todayMyt } from '@/lib/format';
 
@@ -212,9 +212,49 @@ export default function SeparationForm({ profile }: { profile: EmployeeProfile }
                       },
                     ]}
                   />
-                  <Alert severity="info" variant="outlined">
-                    Leave position at LWD (encashable / recoverable days), approved leave after LWD, approvals to re-route and open claims appear here after W2-004 / W2-005.
-                  </Alert>
+                  {preview.pendingApprovals !== null && (
+                    <Typography variant="body2">
+                      Pending approvals where {profile.personal.fullName} is the approver:{' '}
+                      <strong>{preview.pendingApprovals}</strong>
+                      {preview.pendingApprovals > 0 ? ' — will re-route (BR-LV-61)' : ''}
+                    </Typography>
+                  )}
+                  {preview.leavePosition ? (
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+                        Leave position at LWD ({formatDate(preview.leavePosition.lastWorkingDay)})
+                      </Typography>
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        {preview.leavePosition.summary}
+                      </Typography>
+                      <MiniTable
+                        caption="Leave position at LWD"
+                        rows={preview.leavePosition.rows}
+                        getRowId={(x) => x.leaveType.id}
+                        columns={[
+                          { key: 't', header: 'Type', render: (x) => x.leaveType.code },
+                          { key: 'e', header: 'Entitled to LWD', align: 'right', render: (x) => Number(x.entitledToLwd).toFixed(1) },
+                          { key: 'tk', header: 'Taken', align: 'right', render: (x) => Number(x.taken).toFixed(1) },
+                          { key: 'b', header: 'Balance', align: 'right', render: (x) => Number(x.balance).toFixed(1) },
+                          { key: 'en', header: 'Encashable', align: 'right', render: (x) => Number(x.encashable).toFixed(1) },
+                          { key: 'rc', header: 'Recoverable', align: 'right', render: (x) => Number(x.recoverable).toFixed(1) },
+                        ]}
+                      />
+                      {preview.leavePosition.leaveAfterLwd.length > 0 && (
+                        <Alert severity="warning" variant="outlined" sx={{ mt: 1 }}>
+                          Approved leave after the last working day will be flagged for cancellation:{' '}
+                          {preview.leavePosition.leaveAfterLwd.map((l) => `${l.refNo} (${formatDate(l.startDate)} – ${formatDate(l.endDate)}, ${Number(l.days).toFixed(1)} d)`).join('; ')}
+                        </Alert>
+                      )}
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      Enter the last working day to see the leave position (encashable / recoverable days).
+                    </Typography>
+                  )}
+                  <Typography variant="caption" color="text.secondary">
+                    Open claims (approved, not disbursed — remain payable) appear here after W2-005.
+                  </Typography>
                 </Stack>
               )}
             </CardContent>

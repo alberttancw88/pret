@@ -195,7 +195,7 @@ function ShellFrame({
   // Bottom bar (UXQ-07): Home · Leave · Claims · Approvals|Profile · More
   const bottomItems = [
     { value: 'home', label: 'Home', href: '/home', icon: HomeOutlinedIcon, match: ['/home'] },
-    { value: 'leave', label: 'Leave', href: '/leave/applications', icon: EventAvailableOutlinedIcon, match: ['/leave'] },
+    { value: 'leave', label: 'Leave', href: '/my/leave', icon: EventAvailableOutlinedIcon, match: ['/my/leave', '/leave'] },
     { value: 'claims', label: 'Claims', href: '/claims', icon: ReceiptLongOutlinedIcon, match: ['/claims'] },
     canApprove
       ? { value: 'approvals', label: 'Approvals', href: '/approvals', icon: TaskAltOutlinedIcon, match: ['/approvals'], badge: badges.approvals ?? 0 }

@@ -9,6 +9,33 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.8] — 2026-11-20 — W2-004 Leave management built
+### Added
+- Leave setup (ADM/SA): leave types with Employment Act minimum warning, service-band
+  entitlements, policy settings, approval workflows; statutory leave types seeded (D13).
+- Leave engine (in the database, mirrored in TypeScript): working-day count by pattern and
+  state holidays, half days, pro-rating, sick + hospitalisation 60-day pool, maternity 98 /
+  paternity 7, overlap and back-date checks, EMERGENCY flag, ledger-only balances, carry-forward
+  and credit expiry, year-end roll-over with preview, leaver final balance.
+- Generic approval engine (ADR-0004) for leave now and claims next: multi-level workflows,
+  delegation with re-routing, reassign, reminders and escalation, bulk decisions; no
+  self-approval (incl. delegates) enforced in the database.
+- Screens: admin L1–L14; employee apply / my leave / balances / ledger / replacement credits /
+  calendar; approvals inbox and decision views; Home leave tiles; phone layouts.
+- From W2-003: profile Leave tab, opening balances on new-employee wizard, leaver leave on
+  separation, team leave columns.
+- Nightly pg_cron job `pret-leave-daily` (00:10 MYT).
+- Database: 8 migrations on `pret-dev` (22 new tables, RLS forced on all); synthetic leave
+  seed for sample employees only.
+- Tests: W2-004 role matrix 130/130, W2-003 90/90, W2-002 91/91, foundation 86/86, unit 82/82.
+- Decision D30: W2-004 open questions accepted at their defaults.
+### Deferred
+- Claims parts of Home/inbox → W2-005; notification delivery, leave reports, XLSX export → W2-007;
+  My public holidays (P11) and delegation tab (G6) → W2-006.
+### Known gaps
+- Not yet exercised in a browser. No published public-holiday calendar on pret-dev yet, so
+  holidays are not deducted until one is published.
+
 ## [0.2.7] — 2026-11-19 — Cron key live, Super Admin employee record
 ### Changed
 - `CRON_SECRET` set in Vercel; `/api/cron/daily` now rejects unauthenticated calls (401).

@@ -6,6 +6,7 @@ import { fieldCrypto } from '../crypto';
 import { signedPhotoUrls } from '../storage';
 import { authorize, hasRole, iso, likeTerm, resolveNames, stamps } from '../lib/action-helpers';
 import { parseParams, EXPORT_LIMIT } from './org';
+import { leaverPositionFor, teamLeaveSummariesTx, teamMemberLeave } from './leave';
 import {
   activityParamsSchema, changeRequestListParamsSchema, directoryParamsSchema, documentListParamsSchema, employeeListParamsSchema,
   employeeOptionsSchema, myDocumentListParamsSchema, myTeamParamsSchema, separationPreviewSchema,
@@ -457,7 +458,7 @@ async function loadRecommendations(tx: Tx, id: string): Promise<ProbationRecomme
 }
 
 const PLACEHOLDERS = {
-  leave: 'Leave balances and applications are available after W2-004 (leave management).',
+  leave: null,
   claims: 'Claims are available after W2-005 (claims management).',
   compensation: 'Compensation arrives with payroll (R1.1).',
   payslips: 'Payslips arrive with payroll (R1.1).',
@@ -503,6 +504,15 @@ async function buildAdminProfile(tx: Tx, user: CurrentUser, accessToken: string,
   const docsExpiring = (await sql<{ n: number }>`select count(*)::int as n from app.employee_documents where employee_id = ${e.id}::uuid
      and is_active and expiry_date between ${today}::date and ${addDays(today, 30)}::date`.execute(tx)).rows[0]?.n ?? 0;
   const openCrs = (await sql<{ n: number }>`select count(*)::int as n from app.change_requests where employee_id = ${e.id}::uuid and status = 'submitted'`.execute(tx)).rows[0]?.n ?? 0;
+  // W2-004: open leave items + Overview "Leave snapshot" (Available per visible type, current year — from the summary cache)
+  const leaveOpen = (await sql<{ l: number; c: number }>`select
+      (select count(*)::int from app.leave_applications where employee_id = ${e.id}::uuid and status in ('pending','cancellation_pending')) as l,
+      (select count(*)::int from app.replacement_credits where employee_id = ${e.id}::uuid and status = 'pending') as c`.execute(tx)).rows.map((x) => ({ pendingLeave: x.l, pendingCredits: x.c }))[0]!;
+  const leaveSnapshot = (await sql<{ id: string; code: string; name: string; available: string }>`select t.id, t.code, t.name, s.available
+      from app.leave_balance_summary s join app.leave_types t on t.id = s.leave_type_id
+     where s.employee_id = ${e.id}::uuid and s.leave_year = extract(year from app.today_myt())::int and t.is_active and t.visible_to_employees
+       and t.entitlement_method in ('annual_banded','earned_credits','no_entitlement') order by t.display_order`.execute(tx)).rows
+    .map((x) => ({ leaveTypeId: x.id, code: x.code, name: x.name, available: Number(x.available).toFixed(1) }));
   const refs = await employeeRefs(tx, [e.manager_employee_id, e.leave_approver_employee_id, e.claim_approver_employee_id]);
   const photos = await photoUrlMap(accessToken, tx, [e.photo_file_id]);
   const names = await resolveNames(tx, [e.created_by, e.updated_by]);
@@ -559,7 +569,7 @@ async function buildAdminProfile(tx: Tx, user: CurrentUser, accessToken: string,
     bank: { current: bank.find((x) => x.isCurrent) ?? null, history: bank },
     portal: { userId: portal?.user_id ?? null, state: portalState, inviteScheduledFor: portal?.invite_scheduled_for ?? null, lastLoginAt: iso(portal?.last_login_at) },
     completeness: completenessOf(comp?.missing ?? [], comp?.missing_payroll ?? [], comp?.total_checks ?? 13),
-    upcoming, openItems: { changeRequests: openCrs, documentsExpiringSoon: docsExpiring }, placeholders: PLACEHOLDERS,
+    upcoming, openItems: { changeRequests: openCrs, documentsExpiringSoon: docsExpiring, ...leaveOpen }, leaveSnapshot, placeholders: PLACEHOLDERS,
     can: {
       editPersonal: true, editPhoto: true, editSensitive: !isOwn, editMykad: !isOwn, editEmployeeNo: isSa, editContact: true, editFamily: !isOwn,
       editEmployment: active, editTopOfOrg: isSa, addJobChange: active, editStatutory: !isOwn, editBank: !isOwn, reveal: true,
@@ -676,11 +686,12 @@ export async function teamRows(tx: Tx, params: MyTeamParams, all: boolean, acces
       from ${from} where ${where} order by ${sql.raw(sort[p.sort] ?? 'e.full_name')} ${dirOf(p.dir)}, e.employee_no limit ${limit} offset ${offset}`.execute(tx);
   const total = (await sql<{ n: number }>`select count(*)::int as n from ${from} where ${where}`.execute(tx)).rows[0]?.n ?? 0;
   const photos = accessToken ? await photoUrlMap(accessToken, tx, rows.rows.map((r) => r.photo_file_id)) : new Map<string, string>();
+  const leaveCols = await teamLeaveSummariesTx(tx, rows.rows.map((r) => r.id));
   return {
     rows: rows.rows.map((r) => ({
       employeeId: r.id, employeeNo: r.employee_no, fullName: r.full_name, preferredName: r.preferred_name,
       photoUrl: r.photo_file_id ? photos.get(r.photo_file_id) ?? null : null, position: { id: r.position_id, label: r.title },
-      department: { id: r.department_id, label: r.dept }, status: r.status, isDirect: r.manager_employee_id === me, leave: null,
+      department: { id: r.department_id, label: r.dept }, status: r.status, isDirect: r.manager_employee_id === me, leave: leaveCols.get(r.id) ?? null,
     })),
     total, page: all ? 1 : p.page, pageSize: all ? EXPORT_LIMIT : p.pageSize,
   };
@@ -722,7 +733,8 @@ export async function getTeamMemberProfile(employeeNo: string): Promise<TeamMemb
       isDirectReport: e.manager_employee_id === me,
       canRecommendProbation: e.status === 'on_probation',
       myRecommendations: recs,
-      placeholders: { leave: PLACEHOLDERS.leave, claims: PLACEHOLDERS.claims },
+      leave: await teamMemberLeave(tx, e.id),
+      placeholders: { leave: null, claims: PLACEHOLDERS.claims },
     };
   });
 }
@@ -894,10 +906,18 @@ export async function separationPreview(tx: Tx, employeeId: string, noticeDate: 
   const served = Math.round((Date.parse(useLwd) - Date.parse(noticeDate)) / 86_400_000) + 1;
   const reportees = (await sql<{ n: number }>`select count(*)::int as n from app.employees where manager_employee_id = ${employeeId}::uuid
       and status in ('pending_join','on_probation','confirmed','notice_period')`.execute(tx)).rows[0]?.n ?? 0;
+  // W2-004: open approvals where this person is the approver ("will re-route") and BR-LV-43 maternity-period warning
+  const pendingApprovals = (await sql<{ n: number }>`select count(*)::int as n from app.approval_tasks t join app.app_users u on u.id = t.assignee_user_id
+      where t.status = 'open' and u.employee_id = ${employeeId}::uuid`.execute(tx)).rows[0]?.n ?? 0;
+  const warnings: string[] = [];
+  const maternity = (await sql<{ n: number }>`select count(*)::int as n from app.leave_applications a join app.leave_types t on t.id = a.leave_type_id
+      where a.employee_id = ${employeeId}::uuid and t.category = 'maternity' and a.status in ('approved','cancellation_pending','pending')
+        and ${noticeDate}::date <= a.end_date and ${useLwd}::date >= a.start_date - 30`.execute(tx)).rows[0]?.n ?? 0;
+  if (maternity) warnings.push('The employee is on or near maternity leave — check s41A protections before recording a termination (BR-LV-43).');
   return {
     noticeRequiredDays: days, noticeBasis: basis, expectedLastWorkingDay: expected, shortfallDays: Math.max(0, days - served),
     statusAfter: useLwd < today ? 'separated' : 'notice_period', defaultPortalAccessEnd: useLwd, maxPortalAccessEnd: addDays(useLwd, 30),
-    reporteeCount: reportees, leavePosition: null, pendingApprovals: null, openClaims: null, warnings: [],
+    reporteeCount: reportees, leavePosition: await leaverPositionFor(tx, employeeId, useLwd), pendingApprovals, openClaims: null, warnings,
   };
 }
 

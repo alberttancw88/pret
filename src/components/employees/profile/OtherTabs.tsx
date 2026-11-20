@@ -44,7 +44,7 @@ import { formatDateTime } from '@/lib/format';
 // ---------------------------------------------------------------------------
 // Overview
 // ---------------------------------------------------------------------------
-export function OverviewTab({ profile, tabHref, leavePlaceholder }: { profile: EmployeeProfile; tabHref: (tab: string) => string; leavePlaceholder: string }) {
+export function OverviewTab({ profile, tabHref }: { profile: EmployeeProfile; tabHref: (tab: string) => string }) {
   const e = profile.employment;
   const c = profile.completeness;
   return (
@@ -119,15 +119,46 @@ export function OverviewTab({ profile, tabHref, leavePlaceholder }: { profile: E
                 {profile.openItems.documentsExpiringSoon}
               </Link>
             </Typography>
+            <Typography>
+              Pending leave applications:{' '}
+              <Link component={NextLink} href={tabHref('leave')} scroll={false}>
+                {profile.openItems.pendingLeave}
+              </Link>
+            </Typography>
+            <Typography>
+              Pending replacement credits:{' '}
+              <Link component={NextLink} href={tabHref('leave')} scroll={false}>
+                {profile.openItems.pendingCredits}
+              </Link>
+            </Typography>
             <Typography color="text.secondary" variant="body2">
-              Pending leave and claims appear here from W2-004 / W2-005.
+              Pending claims appear here from W2-005.
             </Typography>
           </Stack>
         </SectionCard>
       </Grid>
       <Grid size={{ xs: 12 }}>
         <SectionCard title="Leave snapshot">
-          <Typography color="text.secondary">{leavePlaceholder}</Typography>
+          {profile.leaveSnapshot.length === 0 ? (
+            <Typography color="text.secondary">No leave entitlements this year yet.</Typography>
+          ) : (
+            <Stack direction="row" spacing={3} flexWrap="wrap" useFlexGap>
+              {profile.leaveSnapshot.map((l) => (
+                <Box key={l.leaveTypeId}>
+                  <Typography variant="caption" color="text.secondary" component="p">
+                    {l.name}
+                  </Typography>
+                  <Link component={NextLink} href={tabHref('leave')} scroll={false} className="pret-tnum" sx={{ fontSize: 20, fontWeight: 700 }}>
+                    {Number(l.available).toFixed(1)}
+                  </Link>
+                  <Typography variant="caption" color="text.secondary">
+                    {' '}
+                    available
+                  </Typography>
+                </Box>
+              ))}
+            </Stack>
+          )}
         </SectionCard>
       </Grid>
     </Grid>

@@ -1,6 +1,6 @@
 'use client';
 
-// P31 · My team — S-AP-06 · /team · F-PRT-12 · US-PORTAL-012 (leave columns arrive with W2-004).
+// P31 · My team — S-AP-06 · /team · F-PRT-12 · US-PORTAL-012 (leave columns live since W2-004: TeamRow.leave).
 // P32 · Team member (limited profile) — S-AP-07 · /team/{employeeNo} · F-EMP-03 (M) · US-EMP-004.
 //   Only PRD "M" fields: A16 · A1 · A2 · A3 · A7 · B1 · B3 · B4 · C1–C5 · F1, F3–F6, F8–F13,
 //   F15–F19, F24, F27 · G1, G2, G5 · Leave / Claims (team scope → W2-004 / W2-005).
@@ -39,6 +39,9 @@ import { EmploymentStatusChip, dateOr, phone } from '../labels';
 import { EmergencyTable } from '../profile/ContactTab';
 import { EmploymentFacts, SeparationFacts } from '../profile/EmploymentTab';
 import { TEAM_FILTERS } from '../filters';
+import StatusChip from '../../StatusChip';
+import { TeamMemberLeaveView } from '../../leave/EmployeeLeave';
+import { formatDate } from '@/lib/format';
 
 export function MyTeamList({ rows, total, params, departments }: { rows: TeamRow[]; total: number; params: MyTeamParams; departments: Ref[] }) {
   const list = useServerList({ filters: TEAM_FILTERS, sort: { key: 'name', direction: 'asc' } });
@@ -65,15 +68,32 @@ export function MyTeamList({ rows, total, params, departments }: { rows: TeamRow
     { key: 'department', header: 'Department', value: (x) => x.department.label },
     { key: 'direct', header: 'Reports', sortable: false, value: (x) => (x.isDirect ? 'Direct' : 'Indirect') },
     { key: 'status', header: 'Status', kind: 'status', sortable: false, value: (x) => x.status, render: (x) => <EmploymentStatusChip status={x.status} /> },
-    { key: 'today', header: 'Today', sortable: false, value: () => '—' },
-    { key: 'al', header: 'AL available', sortable: false, align: 'right', value: () => '—' },
-    { key: 'sl', header: 'SL available', sortable: false, align: 'right', value: () => '—' },
-    { key: 'pending', header: 'Pending items', sortable: false, align: 'right', value: () => '—' },
+    {
+      key: 'today',
+      header: 'Today',
+      sortable: false,
+      value: (x) => (x.leave?.today ? (x.leave.today === 'full' ? 'On leave' : `On leave ${x.leave.today.toUpperCase()}`) : ''),
+      render: (x) =>
+        x.leave?.today ? <StatusChip set="leave" value="Approved" label={x.leave.today === 'full' ? 'On leave' : `On leave ${x.leave.today.toUpperCase()}`} /> : '—',
+    },
+    {
+      key: 'week',
+      header: 'This week',
+      sortable: false,
+      priority: 'low',
+      value: (x) => (x.leave?.thisWeek ?? []).map((w) => `${formatDate(w.date).slice(0, 5)}${w.session !== 'full' ? ` ${w.session.toUpperCase()}` : ''}`).join(', '),
+    },
+    { key: 'al', header: 'AL available', sortable: false, align: 'right', value: (x) => (x.leave?.alAvailable != null ? Number(x.leave.alAvailable).toFixed(1) : '') },
+    { key: 'sl', header: 'SL available', sortable: false, align: 'right', priority: 'low', value: (x) => (x.leave?.slAvailable != null ? Number(x.leave.slAvailable).toFixed(1) : '') },
+    { key: 'rl', header: 'RL available', sortable: false, align: 'right', priority: 'low', value: (x) => (x.leave?.rlAvailable != null ? Number(x.leave.rlAvailable).toFixed(1) : '') },
+    { key: 'pending', header: 'Pending items', sortable: false, align: 'right', value: (x) => (x.leave ? x.leave.pendingItems : '') },
   ];
+  const onLeaveToday = rows.filter((x) => x.leave?.today).length;
+  const thisWeek = rows.filter((x) => (x.leave?.thisWeek.length ?? 0) > 0).length;
   return (
     <>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Team size {total}. Leave columns (today, this week, balances, pending items) are filled once the leave module is live (W2-004).
+        Team size {total} · On leave today {onLeaveToday} · This week {thisWeek}{total > rows.length ? ' (this page)' : ''}.
       </Typography>
       <ListPage<TeamRow>
         itemName={{ singular: 'team member', plural: 'team members' }}
@@ -197,7 +217,7 @@ export function TeamMemberView({ m }: { m: TeamMemberProfile }) {
           )}
         </Stack>
       )}
-      {tab === 'leave' && <TabPlaceholder title="Available after W2-004" body={m.placeholders.leave || 'Leave balances and applications for your team arrive with the leave module.'} />}
+      {tab === 'leave' && <TeamMemberLeaveView leave={m.leave} />}
       {tab === 'claims' && <TabPlaceholder title="Available after W2-005" body={m.placeholders.claims || 'Team claims arrive with the claims module.'} />}
       <RecommendationDialog open={rec} onClose={() => setRec(false)} m={m} />
     </Box>

@@ -205,6 +205,14 @@ export async function createEmployee(input: Input): Promise<ActionResult<CreateE
         else await sql`insert into app.employee_bank_accounts (employee_id, payment_method, effective_from, verified_by)
                        values (${id}::uuid, ${d.bank.paymentMethod}::app.payment_method, ${d.bank.effectiveFrom ?? today}::date, app.current_app_user_id())`.execute(tx);
       }
+      // W2-004 step 5 (F-LV-35): opening leave — "Opening balance" ledger rows, migrated credits and paternity occurrences
+      const ol = d.openingLeave;
+      if (ol && (ol.rows.some((r) => r.takenThisYear > 0 || r.carryForward > 0) || ol.credits.length > 0 || ol.paternityOccurrencesUsed > 0)) {
+        const payload = { rows: ol.rows.map((r) => ({ leave_type_id: r.leaveTypeId, taken_this_year: r.takenThisYear, carry_forward: r.carryForward,
+          carry_forward_expiry: r.carryForwardExpiry })), credits: ol.credits.map((c) => ({ date_worked: c.dateWorked, days: c.days, expiry_date: c.expiryDate })),
+          paternity_occurrences_used: ol.paternityOccurrencesUsed };
+        await sql`select app.save_opening_leave(${id}::uuid, ${JSON.stringify(payload)}::jsonb)`.execute(tx);
+      }
       const status = (await sql<{ status: EmploymentStatus }>`select status::text as status from app.employees where id = ${id}::uuid`.execute(tx)).rows[0]!.status;
       // FR-EMP-02 invite: now / scheduled (default join date − lead days) / later
       let scheduledFor: string | null = null;

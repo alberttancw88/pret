@@ -94,12 +94,12 @@ export function buildNav(user: ShellUser): NavSection[] {
       label: 'My Leave',
       icon: 'leave',
       children: [
-        { id: 'leave-apply', label: 'Apply leave', href: '/leave/apply' },
-        { id: 'leave-applications', label: 'My applications', href: '/leave/applications' },
-        { id: 'leave-balances', label: 'My balances', href: '/leave/balances' },
-        { id: 'leave-credits', label: 'Replacement credits', href: '/leave/credits' },
+        { id: 'leave-apply', label: 'Apply leave', href: '/my/leave/apply' },
+        { id: 'leave-applications', label: 'My applications', href: '/my/leave' },
+        { id: 'leave-balances', label: 'My balances', href: '/my/leave/balances' },
+        { id: 'leave-credits', label: 'Replacement credits', href: '/my/leave/credits' },
         { id: 'leave-calendar', label: 'Leave calendar', href: '/leave/calendar' },
-        { id: 'leave-holidays', label: 'Public holidays', href: '/leave/holidays' },
+        // P11 Public holidays (/my/holidays) arrives with W2-006 — hidden until the page exists.
       ],
     });
     my.push({
@@ -184,15 +184,19 @@ export function buildNav(user: ShellUser): NavSection[] {
         label: 'Leave',
         icon: 'leave',
         children: [
-          { id: 'lv-apps', label: 'Applications', href: '/admin/leave/applications' },
-          { id: 'lv-balances', label: 'Balances', href: '/admin/leave/balances' },
-          { id: 'lv-adjustments', label: 'Adjustments', href: '/admin/leave/adjustments' },
-          { id: 'lv-overrides', label: 'Entitlement overrides', href: '/admin/leave/overrides' },
-          { id: 'lv-credits', label: 'Replacement credits', href: '/admin/leave/credits' },
-          { id: 'lv-calendar', label: 'Calendar', href: '/admin/leave/calendar' },
-          { id: 'lv-delegations', label: 'Delegations', href: '/admin/leave/delegations' },
-          { id: 'lv-rollover', label: 'Year-end roll-over', href: '/admin/leave/roll-over' },
-          { id: 'lv-setup', label: 'Setup', href: '/admin/leave/setup' },
+          { id: 'lv-apps', label: 'Applications', href: '/leave/applications' },
+          { id: 'lv-balances', label: 'Balances', href: '/leave/balances' },
+          { id: 'lv-adjustments', label: 'Adjustments', href: '/leave/adjustments' },
+          { id: 'lv-overrides', label: 'Entitlement overrides', href: '/leave/overrides' },
+          { id: 'lv-credits', label: 'Replacement credits', href: '/leave/credits' },
+          { id: 'lv-calendar', label: 'Calendar', href: '/leave/calendar' },
+          { id: 'lv-delegations', label: 'Delegations', href: '/leave/delegations' },
+          { id: 'lv-rollover', label: 'Year-end roll-over', href: '/leave/year-end' },
+          // IA §3.3 "Setup ▸ Leave types · Entitlement bands · Policy · Approval workflows" (nav is two levels deep).
+          { id: 'lv-types', label: 'Setup · Leave types', href: '/leave/setup/types' },
+          { id: 'lv-bands', label: 'Setup · Entitlement bands', href: '/leave/setup/bands' },
+          { id: 'lv-policy', label: 'Setup · Leave policy', href: '/leave/setup/policy' },
+          { id: 'lv-workflows', label: 'Setup · Approval workflows', href: '/leave/setup/workflows' },
         ],
       },
       {

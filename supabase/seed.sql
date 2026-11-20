@@ -220,3 +220,78 @@ begin
   update app.departments set head_employee_id = '00000000-0000-4000-8000-0000000e0002' where id = v_dept and head_employee_id is null;
   perform app.run_employee_daily_job(true);
 end $$;
+
+-- ===========================================================================
+-- W2-004 (synthetic): leave entitlements and sample leave for SMP-01 … SMP-08 ONLY (dev). Never INT-001 or any
+-- non-sample employee. Dates are relative to the day the seed runs. Idempotent: skipped once sample leave exists.
+-- Applications are written through the engine's own pieces (app.leave_count, app.route_approval, app.post_leave_taken)
+-- so balances, per-day rows, routing and the ledger are consistent; "approved" samples carry a system trail row.
+-- ===========================================================================
+create or replace function pg_temp.seed_leave(p_emp uuid, p_type uuid, p_start date, p_end date, p_status text, p_reason text) returns uuid
+language plpgsql as $$
+declare v_id uuid; v_ref text; v_days numeric; v_wf uuid; v_levels int; v_y int := extract(year from p_start)::int;
+begin
+  select workflow_id into v_wf from app.leave_types where id = p_type;
+  select count(*) into v_levels from app.approval_workflow_levels where workflow_id = v_wf;
+  select coalesce(sum(weight), 0) into v_days from app.leave_count(p_emp, p_start, 'full', p_end, 'full', 'working_days');
+  v_ref := private.next_doc_no('LV', v_y);
+  insert into app.leave_applications (ref_no, employee_id, leave_type_id, leave_year, start_date, start_session, end_date, end_session, days, reason,
+                                      status, workflow_id, current_level, total_levels, decided_at)
+  values (v_ref, p_emp, p_type, v_y, p_start, 'full', p_end, 'full', v_days, p_reason, p_status::app.leave_status, v_wf,
+          case when p_status = 'approved' then v_levels else 1 end, v_levels, case when p_status = 'approved' then now() end)
+  returning id into v_id;
+  insert into app.leave_application_days (application_id, employee_id, leave_date, session, weight, day_kind, day_label, leave_year)
+  select v_id, p_emp, c.leave_date, c.session, c.weight, c.kind, c.label, v_y
+    from app.leave_count(p_emp, p_start, 'full', p_end, 'full', 'working_days') c;
+  insert into app.leave_application_events (application_id, employee_id, event, to_status, actor_name)
+  values (v_id, p_emp, 'Submitted (sample data)', 'pending', 'System');
+  if p_status = 'approved' then
+    insert into app.approval_tasks (subject_type, leave_application_id, subject_employee_id, level, source, status, acting_as, decided_at, decided_by_name, routing_note)
+    values ('leave_application', v_id, p_emp, 1, 'admin_pool', 'approved', 'system_auto', now(), 'System', 'Sample data (seed)');
+    perform app.post_leave_taken(v_id);
+    perform app.refresh_team_calendar(v_id);
+  else
+    perform app.route_approval('leave_application', v_id);
+  end if;
+  return v_id;
+end $$;
+
+do $$
+declare
+  v_today date := app.today_myt(); v_y int := extract(year from app.today_myt())::int;
+  v_next date := (date_trunc('week', (app.today_myt() + 14)::timestamp))::date;       -- a Monday 2–3 weeks ahead
+  v_past date := (date_trunc('week', (app.today_myt() - 30)::timestamp))::date;       -- a Monday about a month ago
+  v_al uuid := '00000000-0000-4000-8000-00000000e101'; v_sl uuid := '00000000-0000-4000-8000-00000000e102';
+  v_ul uuid := '00000000-0000-4000-8000-00000000e107'; v_rl uuid := '00000000-0000-4000-8000-00000000e108';
+  e record; v_cr uuid; v_sun date;
+begin
+  if exists (select 1 from app.leave_applications a join app.employees x on x.id = a.employee_id where x.employee_no like 'SMP-%') then return; end if;
+  if not exists (select 1 from app.employees where employee_no = 'SMP-01') then return; end if;
+  perform set_config('app.actor_label', 'seed:w2-004', true);
+  -- 1. entitlements for the sample employees only (current year, and next year once the seed runs after 01/11)
+  for e in select id from app.employees where employee_no like 'SMP-%' loop
+    perform app.generate_entitlements(v_y, e.id, 'Entitlement');
+    if extract(year from v_next) > v_y then perform app.generate_entitlements(v_y + 1, e.id, 'Entitlement'); end if;
+  end loop;
+  -- 2. leave: approved past AL (SMP-03), approved past SL (SMP-07), pending AL (SMP-04, SMP-02), pending UL (SMP-05)
+  perform pg_temp.seed_leave('00000000-0000-4000-8000-0000000e0003', v_al, v_past, v_past + 1, 'approved', 'Family trip (sample)');
+  perform pg_temp.seed_leave('00000000-0000-4000-8000-0000000e0007', v_sl, v_past + 9, v_past + 9, 'approved', 'Unwell (sample)');
+  perform pg_temp.seed_leave('00000000-0000-4000-8000-0000000e0004', v_al, v_next, v_next + 1, 'pending', 'Holiday (sample)');
+  perform pg_temp.seed_leave('00000000-0000-4000-8000-0000000e0002', v_al, v_next + 3, v_next + 3, 'pending', 'Personal matters (sample)');
+  perform pg_temp.seed_leave('00000000-0000-4000-8000-0000000e0005', v_ul, v_next + 2, v_next + 2, 'pending', 'Unpaid day (sample)');
+  -- 3. an approved replacement credit for a recent Sunday (SMP-03)
+  v_sun := (date_trunc('week', (app.today_myt() - 7)::timestamp))::date - 1;
+  insert into app.replacement_credits (credit_no, employee_id, date_worked, duration, credit_days, day_kind, day_type_label, reason, status, workflow_id,
+                                       expiry_date, remaining_days, decided_at)
+  values (private.next_doc_no('RL', v_y), '00000000-0000-4000-8000-0000000e0003', v_sun, 'full_day', 1.0, 'rest', 'Rest day', 'Weekend deployment (sample)',
+          'approved', '00000000-0000-4000-8000-00000000f002', v_sun + 90, 1.0, now())
+  returning id into v_cr;
+  insert into app.leave_ledger (employee_id, leave_type_id, leave_year, entry_type, days, effective_date, expires_on, source_credit_id, reason)
+  values ('00000000-0000-4000-8000-0000000e0003', v_rl, extract(year from v_sun)::int, 'credit_earned', 1.0, v_sun, v_sun + 90, v_cr, 'Credit (sample)');
+  -- 4. an HR adjustment (SMP-05) and an opening carry-forward (SMP-01)
+  insert into app.leave_ledger (employee_id, leave_type_id, leave_year, entry_type, days, effective_date, reason)
+  values ('00000000-0000-4000-8000-0000000e0005', v_al, v_y, 'adjustment', 1.0, v_today, 'Sample correction (seed data)');
+  insert into app.leave_ledger (employee_id, leave_type_id, leave_year, entry_type, days, effective_date, expires_on, is_opening, reason)
+  values ('00000000-0000-4000-8000-0000000e0001', v_al, v_y, 'carry_forward', 3.0, make_date(v_y, 1, 1), make_date(v_y, 3, 31), true, 'Opening carry-forward (sample)');
+end $$;
+drop function if exists pg_temp.seed_leave(uuid, uuid, date, date, text, text);

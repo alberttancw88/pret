@@ -35,9 +35,12 @@ export async function inboxCounts(tx: Tx): Promise<InboxCounts> {
   const r = (await sql<R>`select
       count(*) filter (where t.subject_type = 'leave_application')::int as leave,
       count(*) filter (where t.subject_type = 'leave_cancellation')::int as cancellations,
-      count(*) filter (where t.subject_type = 'replacement_credit')::int as credits
+      count(*) filter (where t.subject_type = 'replacement_credit')::int as credits,
+      count(*) filter (where t.subject_type = 'claim')::int as claims,
+      count(*) filter (where t.subject_type = 'disbursement_batch')::int as batches
       from app.approval_tasks t where t.status = 'open' and app.task_acting_as(t.id)::text = any(${OWN_ACTING}::text[])`.execute(tx)).rows[0]!;
-  return { leave: r.leave, cancellations: r.cancellations, credits: r.credits, claims: 0, claims_approved: 0, batches: 0 };
+  const ca = (await sql<{ n: number }>`select count(*)::int as n from app.claims c where c.status = 'approved' and app.can_cancel_claim(c.id)`.execute(tx)).rows[0]?.n ?? 0;
+  return { leave: r.leave, cancellations: r.cancellations, credits: r.credits, claims: r.claims, claims_approved: ca, batches: r.batches };
 }
 export async function getInboxCounts(): Promise<InboxCounts> {
   const { ctx } = await authorize(TEAM);
@@ -47,11 +50,9 @@ export async function getInboxCounts(): Promise<InboxCounts> {
 export async function inboxPage(tx: Tx, params: InboxParams, all: boolean): Promise<InboxPage> {
   const p = parseParams(inboxParamsSchema, params);
   const limit = all ? EXPORT_LIMIT : p.pageSize; const offset = all ? 0 : (p.page - 1) * p.pageSize;
-  if (p.tab === 'claims' || p.tab === 'claims_approved' || p.tab === 'batches') {
-    return { tab: p.tab, rows: [], total: 0, page: 1, pageSize: p.pageSize, placeholder: 'Claims approvals are available after W2-005 (claims management).' };
-  }
   const today = await todayMyt(tx);
   const isAdmin = await dbIsAdmin(tx);
+  if (p.tab === 'claims' || p.tab === 'claims_approved' || p.tab === 'batches') return claimsInboxPage(tx, p, all, today, isAdmin);
   const subject = p.tab === 'leave' ? 'leave_application' : p.tab === 'cancellations' ? 'leave_cancellation' : 'replacement_credit';
   const q = likeTerm(p.q);
   const mine = p.onlyMine || !isAdmin;
@@ -186,4 +187,69 @@ export async function approverOptions(tx: Tx, q: string | undefined, excludeUser
   const r = await sql<R>`select * from app.approver_options(${q ?? null}, ${limit})`.execute(tx);
   return r.rows.filter((x) => x.user_id !== excludeUserId).map((x) => ({ userId: x.user_id, employeeId: x.employee_id, employeeNo: x.employee_no,
     name: x.name, position: x.position_title, isAdmin: x.is_admin }));
+}
+
+// ---------------------------------------------------------------------------
+// W2-005 claims tabs (D12: one task per claim — claim_pool; SA batch approval — super_admin_pool)
+// ---------------------------------------------------------------------------
+const CLAIM_FLAG_SQL = sql`array_remove(array[case when c.flag_over_limit then 'over_limit' end, case when c.flag_late_override then 'late_override' end,
+    case when c.flag_possible_duplicate then 'possible_duplicate' end, case when c.on_behalf_by is not null then 'on_behalf' end], null)`;
+async function claimsInboxPage(tx: Tx, p: ReturnType<typeof inboxParamsSchema.parse>, all: boolean, today: string, isAdmin: boolean): Promise<InboxPage> {
+  const limit = all ? EXPORT_LIMIT : p.pageSize; const offset = all ? 0 : (p.page - 1) * p.pageSize;
+  const q = likeTerm(p.q);
+  const base = { page: all ? 1 : p.page, pageSize: all ? EXPORT_LIMIT : p.pageSize };
+  const dir = p.dir === 'desc' ? sql.raw('desc') : sql.raw('asc');
+  const common: Where[] = [
+    ...(q ? [sql`(c.claim_no ilike ${q} or e.full_name ilike ${q} or e.employee_no ilike ${q} or c.title ilike ${q})`] : []),
+    ...(p.departmentIds?.length ? [sql`e.department_id = any(${p.departmentIds}::uuid[])`] : []),
+    ...(p.categoryIds?.length ? [sql`exists (select 1 from app.claim_lines l where l.claim_id = c.id and l.category_id = any(${p.categoryIds}::uuid[]))`] : []),
+    ...(p.amountFrom ? [sql`c.total_amount >= ${p.amountFrom}::numeric`] : []),
+    ...(p.amountTo ? [sql`c.total_amount <= ${p.amountTo}::numeric`] : []),
+  ];
+  if (p.tab === 'claims') {
+    const mine = p.onlyMine || !isAdmin;
+    const where = and([sql`t.status = 'open'`, sql`t.subject_type = 'claim'`, ...common,
+      ...(mine ? [sql`(app.task_acting_as(t.id)::text = any(${OWN_ACTING}::text[]) or c.employee_id = app.current_employee_id())`] : []),
+      ...(p.flags?.includes('over_limit') ? [sql`c.flag_over_limit`] : []), ...(p.flags?.includes('late_override') ? [sql`c.flag_late_override`] : []),
+      ...(p.flags?.includes('possible_duplicate') ? [sql`c.flag_possible_duplicate`] : []), ...(p.flags?.includes('on_behalf') ? [sql`c.on_behalf_by is not null`] : []),
+      ...(p.from ? [sql`(c.submitted_at at time zone 'Asia/Kuala_Lumpur')::date >= ${p.from}::date`] : []),
+      ...(p.to ? [sql`(c.submitted_at at time zone 'Asia/Kuala_Lumpur')::date <= ${p.to}::date`] : [])]);
+    const from = sql`app.approval_tasks t join app.claims c on c.id = t.claim_id join app.employees e on e.id = c.employee_id join app.departments d on d.id = e.department_id`;
+    const sort: Record<string, string> = { applied: 'c.submitted_at', from: 'c.submitted_at', employee: 'e.full_name', waiting: 't.created_at' };
+    const rows = await sql<R>`select t.id as task_id, t.version, t.created_at as task_at, t.subject_prepared_by, c.*, e.employee_no, e.full_name, e.preferred_name, d.name as dept,
+          ${CLAIM_FLAG_SQL} as flags, (select count(*)::int from app.claim_lines l where l.claim_id = c.id) as lines,
+          (select count(*)::int from app.claim_line_files f join app.claim_lines l on l.id = f.claim_line_id where l.claim_id = c.id) as files,
+          app.can_act_on_task(t.id) as can, c.employee_id = app.current_employee_id() as own, t.subject_prepared_by = app.current_app_user_id() as prepared
+        from ${from} where ${where} order by ${sql.raw(sort[p.sort] ?? 'c.submitted_at')} ${dir} limit ${limit} offset ${offset}`.execute(tx);
+    const total = (await sql<{ n: number }>`select count(*)::int as n from ${from} where ${where}`.execute(tx)).rows[0]?.n ?? 0;
+    return { tab: 'claims', total, ...base, rows: rows.rows.map((r) => ({ taskId: r.task_id, taskVersion: r.version, claimId: r.id, claimNo: r.claim_no,
+      employee: personRef(r.employee_id, r.employee_no, r.full_name, r.preferred_name), department: r.dept, title: r.title, lineCount: r.lines,
+      total: String(r.total_amount), totalSst: String(r.total_sst), attachmentCount: r.files, flags: r.flags, submittedAt: iso(r.submitted_at)!,
+      waitingWorkingDays: weekdaysBetween(mytDate(r.task_at), today), isOwn: r.own, canDecide: !!r.can && !r.own && !r.prepared,
+      blockedReason: r.own ? 'Your claim' : r.prepared ? 'You entered this claim on behalf — another approver must decide.' : null })) };
+  }
+  if (p.tab === 'claims_approved') {
+    const where = and([sql`c.status = 'approved'`, sql`c.employee_id is distinct from app.current_employee_id()`, ...common,
+      ...(p.onlyMine && !isAdmin ? [sql`app.can_cancel_claim(c.id)`] : []),
+      ...(p.inBatch === 'yes' ? [sql`c.disbursement_batch_id is not null`] : p.inBatch === 'no' ? [sql`c.disbursement_batch_id is null`] : []),
+      ...(p.from ? [sql`(c.decided_at at time zone 'Asia/Kuala_Lumpur')::date >= ${p.from}::date`] : []),
+      ...(p.to ? [sql`(c.decided_at at time zone 'Asia/Kuala_Lumpur')::date <= ${p.to}::date`] : [])]);
+    const from = sql`app.claims c join app.employees e on e.id = c.employee_id join app.departments d on d.id = e.department_id left join app.disbursement_batches b on b.id = c.disbursement_batch_id`;
+    const rows = await sql<R>`select c.*, e.employee_no, e.full_name, e.preferred_name, d.name as dept, b.batch_no, app.can_cancel_claim(c.id) as can
+        from ${from} where ${where} order by c.decided_at ${dir} limit ${limit} offset ${offset}`.execute(tx);
+    const total = (await sql<{ n: number }>`select count(*)::int as n from ${from} where ${where}`.execute(tx)).rows[0]?.n ?? 0;
+    return { tab: 'claims_approved', total, ...base, rows: rows.rows.map((r) => ({ claimId: r.id, claimNo: r.claim_no,
+      employee: personRef(r.employee_id, r.employee_no, r.full_name, r.preferred_name), department: r.dept, title: r.title, total: String(r.total_amount),
+      approvedAt: iso(r.decided_at), approvedByName: r.decided_by_name, batchNo: isAdmin ? r.batch_no : null,
+      ageDays: r.decided_at ? Math.max(0, Math.round((Date.parse(today) - Date.parse(mytDate(r.decided_at))) / 86_400_000)) : 0, canCancel: !!r.can })) };
+  }
+  // batches (SA)
+  const where = and([sql`t.status = 'open'`, sql`t.subject_type = 'disbursement_batch'`, ...(q ? [sql`b.batch_no ilike ${q}`] : [])]);
+  const from = sql`app.approval_tasks t join app.disbursement_batches b on b.id = t.disbursement_batch_id`;
+  const rows = await sql<R>`select t.id as task_id, t.version, t.created_at as task_at, b.*, app.user_name(b.prepared_by) as prep, app.can_act_on_task(t.id) as can
+      from ${from} where ${where} order by t.created_at ${dir} limit ${limit} offset ${offset}`.execute(tx);
+  const total = (await sql<{ n: number }>`select count(*)::int as n from ${from} where ${where}`.execute(tx)).rows[0]?.n ?? 0;
+  return { tab: 'batches', total, ...base, placeholder: 'Payroll runs awaiting approval arrive with payroll (R1.1).',
+    rows: rows.rows.map((r) => ({ taskId: r.task_id, taskVersion: r.version, batchId: r.id, batchNo: r.batch_no, type: 'disbursement_batch' as const, period: r.disbursement_month,
+      count: r.claim_count, total: String(r.total_amount), preparedByName: r.prep ?? '', submittedAt: iso(r.task_at)!, canDecide: !!r.can })) };
 }

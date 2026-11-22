@@ -1,6 +1,6 @@
 {
   "name": "pret",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -22,8 +22,10 @@
     "dayjs": "^1.11.23",
     "exceljs": "^4.4.0",
     "jose": "^6.2.17",
+    "jszip": "3.10.1",
     "kysely": "^0.29.9",
     "next": "^15.5.4",
+    "pdf-lib": "1.17.1",
     "pg": "^8.23.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

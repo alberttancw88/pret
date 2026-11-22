@@ -156,7 +156,16 @@ export default function MyProfileView({ me }: { me: MyProfile }) {
           ]}
         />
       )}
-      {tab === 'claims' && <TabPlaceholder title="Available after W2-005" body="Your claims arrive with the claims module." />}
+      {tab === 'claims' && (
+        <TabPlaceholder
+          title="My claims"
+          body="Your claims, their status and your limit utilisation are on My claims."
+          links={[
+            { label: 'My claims', href: '/my/claims' },
+            { label: 'New claim', href: '/my/claims/new' },
+          ]}
+        />
+      )}
       {tab === 'documents' && <TabPlaceholder title="My documents" body="Documents HR has shared with you." links={[{ label: 'Open my documents', href: '/my/documents' }]} />}
       {tab === 'change_requests' && (
         <TabPlaceholder title="My change requests" body="Requests to change legal name, MyKad, family, OKU, religion, race, bank or statutory numbers." links={[{ label: 'View my requests', href: '/my/profile/change-requests' }, { label: 'New request', href: '/my/profile/change-requests/new' }]} />

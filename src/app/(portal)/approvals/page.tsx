@@ -7,12 +7,16 @@ import { INBOX_FILTERS, INBOX_SORTS } from '@/components/leave/filters';
 import { isoOrUndef, uuidList } from '@/components/employees/filters';
 import { readListParams, spValue, toPageParams, type SearchParamsRecord } from '@/lib/list-params';
 import { leaveFilterOptions } from '@/app/_lib/leave-options';
+import { claimFilterOptions } from '@/app/_lib/claim-options';
+import { CLAIM_FLAGS } from '@/server/contracts/claims';
+import { moneyOrUndef } from '@/components/claims/filters';
+import { pickList } from '@/components/employees/filters';
 
 export const metadata: Metadata = { title: 'Approvals' };
 export const dynamic = 'force-dynamic';
 
 // P26 · S-AP-01 · /approvals?tab= — Manager (items routed to them / as delegate), Admin, Super Admin.
-// Claims tabs render the W2-005 placeholder; "Batches & runs" is SA only.
+// Claims tabs (W2-005): Claims · Approved claims – not disbursed; "Batches & runs" is SA only.
 export default async function ApprovalsPage({ searchParams }: { searchParams: Promise<SearchParamsRecord> }) {
   const user = await requireUser(['MGR', 'ADM', 'SA']);
   const sp = await searchParams;
@@ -32,8 +36,18 @@ export default async function ApprovalsPage({ searchParams }: { searchParams: Pr
     from: isoOrUndef(f.from),
     to: isoOrUndef(f.to),
     emergencyOnly: f.emergencyOnly === 'yes',
-    onlyMine: isAdmin ? f.onlyMine !== 'no' : true,
+    onlyMine: isAdmin || tab === 'claims' ? f.onlyMine !== 'no' : true,
+    categoryIds: uuidList(f.categoryIds),
+    amountFrom: moneyOrUndef(f.amountFrom),
+    amountTo: moneyOrUndef(f.amountTo),
+    flags: pickList(f.flags, CLAIM_FLAGS),
+    inBatch: f.inBatch === 'yes' || f.inBatch === 'no' ? f.inBatch : 'any',
   };
-  const [counts, page, options] = await Promise.all([getInboxCounts(), listInbox(params), leaveFilterOptions(user)]);
-  return <ApprovalsInbox tab={tab} tabs={tabs} counts={counts} page={page} params={params} options={options} isAdmin={isAdmin} />;
+  const [counts, page, options, claimOptions] = await Promise.all([
+    getInboxCounts(),
+    listInbox(params),
+    leaveFilterOptions(user),
+    tab === 'claims' ? claimFilterOptions(user) : Promise.resolve(null),
+  ]);
+  return <ApprovalsInbox tab={tab} tabs={tabs} counts={counts} page={page} params={params} options={{ ...options, claimCategories: claimOptions?.categories ?? [] }} isAdmin={isAdmin} />;
 }

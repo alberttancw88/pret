@@ -51,6 +51,14 @@ select '${OWNER_EMPLOYEE_ID}', ${q(env('OWNER_EMPLOYEE_NO'))}, ${q(env('OWNER_FU
        'SGR', (select default_pattern_id from app.work_locations where is_active and (${q(env('OWNER_LOCATION_NAME', false))} is null or name = ${q(env('OWNER_LOCATION_NAME', false))}) order by name limit 1),
        'confirmed'
   from app.app_users u where u.employee_id = '${OWNER_EMPLOYEE_ID}';
+-- keep the auto-numbering counter past the owner's number (else the next hire would be given the same employee no.):
+-- only when the owner's number has the configured prefix + at least <padding> digits (e.g. INT-001 with prefix INT-, padding 3)
+update app.security_settings s
+   set employee_no_next = greatest(s.employee_no_next, substr(${q(env('OWNER_EMPLOYEE_NO'))}, char_length(s.employee_no_prefix) + 1)::int + 1)
+ where s.id = 1
+   and left(${q(env('OWNER_EMPLOYEE_NO'))}, char_length(s.employee_no_prefix)) = s.employee_no_prefix
+   and substr(${q(env('OWNER_EMPLOYEE_NO'))}, char_length(s.employee_no_prefix) + 1) ~ '^[0-9]{1,9}$'
+   and char_length(substr(${q(env('OWNER_EMPLOYEE_NO'))}, char_length(s.employee_no_prefix) + 1)) >= s.employee_no_padding;
 insert into app.employee_personal (employee_id, nric_enc, nric_last4, nric_bidx, date_of_birth, personal_email, res_addr_line1, res_postcode,
                                    res_city, res_state, continuous_service_date)
 values ('${OWNER_EMPLOYEE_ID}', ${hex(enc)}, '${check.digits.slice(-4)}', ${hex(bidx)}, ${q(env('OWNER_DOB'))}::date, ${q(env('OWNER_PERSONAL_EMAIL'))},

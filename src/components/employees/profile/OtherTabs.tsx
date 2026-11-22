@@ -131,8 +131,17 @@ export function OverviewTab({ profile, tabHref }: { profile: EmployeeProfile; ta
                 {profile.openItems.pendingCredits}
               </Link>
             </Typography>
-            <Typography color="text.secondary" variant="body2">
-              Pending claims appear here from W2-005.
+            <Typography>
+              Claims waiting for approval:{' '}
+              <Link component={NextLink} href={tabHref('claims')} scroll={false}>
+                {profile.openItems.pendingClaims}
+              </Link>
+            </Typography>
+            <Typography>
+              Approved claims not yet disbursed:{' '}
+              <Link component={NextLink} href={tabHref('claims')} scroll={false}>
+                {profile.openItems.approvedClaims}
+              </Link>
             </Typography>
           </Stack>
         </SectionCard>

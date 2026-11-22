@@ -107,8 +107,8 @@ export function buildNav(user: ShellUser): NavSection[] {
       label: 'My Claims',
       icon: 'claims',
       children: [
-        { id: 'claims-list', label: 'My claims', href: '/claims' },
-        { id: 'claims-new', label: 'New claim', href: '/claims/new' },
+        { id: 'claims-list', label: 'My claims', href: '/my/claims' },
+        { id: 'claims-new', label: 'New claim', href: '/my/claims/new' },
       ],
     });
     if (RELEASE_R11) {
@@ -204,11 +204,14 @@ export function buildNav(user: ShellUser): NavSection[] {
         label: 'Claims',
         icon: 'claims',
         children: [
-          { id: 'cl-all', label: 'All claims', href: '/admin/claims' },
-          { id: 'cl-batches', label: 'Disbursement batches', href: '/admin/claims/batches' },
-          { id: 'cl-late', label: 'Late overrides', href: '/admin/claims/late-overrides' },
-          { id: 'cl-bulk', label: 'Bulk entry', href: '/admin/claims/bulk-entry' },
-          { id: 'cl-setup', label: 'Setup', href: '/admin/claims/setup' },
+          { id: 'cl-all', label: 'All claims', href: '/claims' },
+          { id: 'cl-batches', label: 'Disbursement batches', href: '/claims/batches' },
+          { id: 'cl-late', label: 'Late overrides', href: '/claims/late-overrides' },
+          { id: 'cl-bulk', label: 'Bulk entry', href: '/claims/bulk' },
+          // IA §3.3 "Setup ▸ Categories & limits (S-CL-05/06/07) · Claims settings (S-CL-08)" (nav is two levels deep).
+          { id: 'cl-categories', label: 'Setup · Categories', href: '/claims/setup/categories' },
+          { id: 'cl-limits', label: 'Setup · Limits', href: '/claims/setup/limits' },
+          { id: 'cl-settings', label: 'Setup · Claims settings', href: '/claims/setup/settings' },
         ],
       },
     ];
@@ -315,7 +318,7 @@ export function buildNav(user: ShellUser): NavSection[] {
   return sections;
 }
 
-/** Longest-prefix match so "/claims/new" activates "New claim", not "My claims". */
+/** Longest-prefix match so "/my/claims/new" activates "New claim", not "My claims". */
 export function findActive(sections: NavSection[], pathname: string): { item?: NavItem; leaf?: NavLeaf } {
   let best: { item?: NavItem; leaf?: NavLeaf; len: number } = { len: -1 };
   const matches = (href: string) => pathname === href || pathname.startsWith(href + '/');

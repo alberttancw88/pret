@@ -196,7 +196,7 @@ function ShellFrame({
   const bottomItems = [
     { value: 'home', label: 'Home', href: '/home', icon: HomeOutlinedIcon, match: ['/home'] },
     { value: 'leave', label: 'Leave', href: '/my/leave', icon: EventAvailableOutlinedIcon, match: ['/my/leave', '/leave'] },
-    { value: 'claims', label: 'Claims', href: '/claims', icon: ReceiptLongOutlinedIcon, match: ['/claims'] },
+    { value: 'claims', label: 'Claims', href: '/my/claims', icon: ReceiptLongOutlinedIcon, match: ['/my/claims', '/claims', '/team/claims'] },
     canApprove
       ? { value: 'approvals', label: 'Approvals', href: '/approvals', icon: TaskAltOutlinedIcon, match: ['/approvals'], badge: badges.approvals ?? 0 }
       : { value: 'profile', label: 'Profile', href: '/my/profile', icon: PersonOutlineIcon, match: ['/my'] },

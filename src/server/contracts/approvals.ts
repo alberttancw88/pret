@@ -181,10 +181,18 @@ export const inboxParamsSchema = pageParamsSchema.extend({
   /** default true; ADM/SA turn it off to see every pending item (override) */
   onlyMine: booleanSchema.default(true),
   sort: z.enum(['applied', 'from', 'employee', 'waiting']).default('applied'),
+  // W2-005 claims tabs
+  categoryIds: multi(uuidSchema),
+  /** money strings "100.00" (Total RM from–to) */
+  amountFrom: z.string().trim().regex(/^\d{1,7}(\.\d{1,2})?$/).optional().catch(undefined),
+  amountTo: z.string().trim().regex(/^\d{1,7}(\.\d{1,2})?$/).optional().catch(undefined),
+  flags: multi(z.enum(['over_limit', 'late_override', 'possible_duplicate', 'on_behalf'])),
+  /** Approved claims – not disbursed: In batch Yes / No */
+  inBatch: z.enum(['any', 'yes', 'no']).default('any'),
 });
 export type InboxParams = z.input<typeof inboxParamsSchema>;
 
-/** Tab badges = actionable counts for the current user. claims tabs: 0 until W2-005. */
+/** Tab badges = actionable counts for the current user (claims_approved: cancellable approved claims; batches: SA only). */
 export type InboxCounts = Record<InboxTab, number>;
 
 export type InboxLeaveRow = {
@@ -222,11 +230,50 @@ export type InboxCreditRow = {
   submittedAt: string; waitingWorkingDays: number;
   canDecide: boolean; overrideOnly: boolean;
 };
+/** W2-005 Claims tab — Submitted claims (MGR: reportees + delegated; ADM/SA: all). Own claims shown read-only ("Your claim"). */
+export type InboxClaimRow = {
+  taskId: string; taskVersion: number;
+  claimId: string; claimNo: string;                           // link → /approvals/claims/{claimNo}
+  employee: PersonRef; department: string;
+  title: string; lineCount: number;
+  total: string; totalSst: string;                            // money strings
+  attachmentCount: number;
+  flags: ('over_limit' | 'late_override' | 'possible_duplicate' | 'on_behalf')[];
+  submittedAt: string; waitingWorkingDays: number;
+  isOwn: boolean;                                             // "Your claim" (read-only)
+  canDecide: boolean;
+  /** "You entered this claim on behalf — another approver must decide." */
+  blockedReason: string | null;
+};
+/** W2-005 Approved claims – not disbursed (CANCEL, reason mandatory — BR-CLM-26). */
+export type InboxApprovedClaimRow = {
+  claimId: string; claimNo: string;
+  employee: PersonRef; department: string; title: string;
+  total: string; approvedAt: string | null; approvedByName: string | null;
+  /** "PB-2027-011" (ADM/SA only) */
+  batchNo: string | null;
+  ageDays: number;
+  canCancel: boolean;
+};
+/** W2-005 Batches & runs (SA) — disbursement batches Pending approval (setting on); payroll runs arrive with R1.1. */
+export type InboxBatchRow = {
+  taskId: string; taskVersion: number;
+  batchId: string; batchNo: string;                           // link → /claims/batches/{batchNo}
+  type: 'disbursement_batch';
+  period: string;                                             // 'yyyy-mm-01'
+  count: number; total: string;
+  preparedByName: string; submittedAt: string;
+  canDecide: boolean;
+};
+/** placeholder: optional note under an empty tab (e.g. "Payroll runs arrive with R1.1.") */
+type InboxBase = { total: number; page: number; pageSize: number; placeholder?: string };
 export type InboxPage =
-  | ({ tab: 'leave' } & { rows: InboxLeaveRow[]; total: number; page: number; pageSize: number })
-  | ({ tab: 'cancellations' } & { rows: InboxCancellationRow[]; total: number; page: number; pageSize: number })
-  | ({ tab: 'credits' } & { rows: InboxCreditRow[]; total: number; page: number; pageSize: number })
-  | ({ tab: 'claims' | 'claims_approved' | 'batches' } & { rows: never[]; total: 0; page: number; pageSize: number; placeholder: string });
+  | ({ tab: 'leave' } & { rows: InboxLeaveRow[] } & InboxBase)
+  | ({ tab: 'cancellations' } & { rows: InboxCancellationRow[] } & InboxBase)
+  | ({ tab: 'credits' } & { rows: InboxCreditRow[] } & InboxBase)
+  | ({ tab: 'claims' } & { rows: InboxClaimRow[] } & InboxBase)
+  | ({ tab: 'claims_approved' } & { rows: InboxApprovedClaimRow[] } & InboxBase)
+  | ({ tab: 'batches' } & { rows: InboxBatchRow[] } & InboxBase);
 
 // ===========================================================================
 // L14 Delegations (ADM/SA, all) and G6 Delegation tab (own — MGR, ADM, SA)
@@ -292,7 +339,7 @@ export const reassignSchema = z.object({
   reason: requiredText(500, 'Reason').refine((s) => s.length >= 10, 'Reason must be at least 10 characters.'),
 }).refine((v) => v.fromUserId !== v.toUserId, { path: ['toUserId'], message: 'Choose a different approver.' });
 export type ReassignInput = z.input<typeof reassignSchema>;
-export const reassignPreviewSchema = z.object({ fromUserId: uuidSchema, toUserId: uuidSchema.optional().catch(undefined), itemTypes: z.array(z.enum(REASSIGN_ITEM_TYPES)).default(['leave', 'cancellations', 'credits']) });
+export const reassignPreviewSchema = z.object({ fromUserId: uuidSchema, toUserId: uuidSchema.optional().catch(undefined), itemTypes: z.array(z.enum(REASSIGN_ITEM_TYPES)).default(['leave', 'cancellations', 'credits', 'claims']) });
 export type ReassignPreviewInput = z.input<typeof reassignPreviewSchema>;
 export type ReassignPreview = {
   count: number;
@@ -326,6 +373,11 @@ export type ReassignResult = { reassigned: number; skipped: { reference: string;
 //       reassignPendingItems(i: ReassignInput): Promise<ActionResult<ReassignResult>>           [ADM, SA] (trail: "Reassigned by HR: reason")
 //   client-callable while typing:
 //       searchApproverOptions(i: ApproverOptionsInput): Promise<ActionResult<{ rows: ApproverOption[] }>>  [MGR, ADM, SA]
+//
+// W2-005 (claims): inbox tabs claims / claims_approved / batches return InboxClaimRow / InboxApprovedClaimRow / InboxBatchRow;
+//   decideTask / bulkDecide decide claim tasks (single level, D12: claimant's manager / claim approver (F16) / delegate, or any ADM / SA —
+//   no Admin override reason needed) and SA batch approval tasks (reject = RETURN, comment required; approver ≠ preparer).
+//   DecideTaskResult.reference = CL-… / PB-…. Cancel an approved claim: cancelClaim in ./claims.
 //
 // Error messages the UI may branch on (ActionFail.error is a readable sentence):
 //   own item → "You can't decide your own request." · already decided → "Already decided by {name} at dd/mm/yyyy HH:mm." ·

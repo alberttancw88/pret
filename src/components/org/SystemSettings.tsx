@@ -260,7 +260,7 @@ export default function SystemSettings({ settings }: { settings: Settings }) {
           </FormCard>
 
           <LinkCard id="leave" title="Leave" body="Leave policy settings (Admin and Super Admin edit)." href="/leave/setup/policy" label="Open leave settings" />
-          <LinkCard id="claims" title="Claims" body="Claims settings (Admin and Super Admin edit; batch approval is the Super Admin setting above)." href="/admin/claims/setup" label="Open claims settings" />
+          <LinkCard id="claims" title="Claims" body="Claims settings (Admin and Super Admin edit; batch approval is the Super Admin setting above)." href="/claims/setup/settings" label="Open claims settings" />
           <Card id="payroll" component="section" aria-labelledby="payroll-h">
             <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
               <Typography id="payroll-h" variant="h5" component="h2" sx={{ mb: 1 }}>

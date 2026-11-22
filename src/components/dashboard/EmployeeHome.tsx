@@ -56,14 +56,14 @@ export type PendingItem =
 
 export type HomeData = {
   balances: LeaveBalance[];
-  pendingClaims: { count: number; amount: number };
+  pendingClaims: { count: number; amount: number | string };
   pendingItems: PendingItem[];
   upcomingLeave: { id: string; type: string; colorIndex: number; from: string; to: string; days: number | string; colour?: string; href?: string }[];
   holidays: { date: string; name: string; weekday: string; state: string }[];
   /** "Holiday calendar for {year} not yet published" (W2-004 Q-F3) */
   holidaysNote?: string | null;
-  recentClaims: { ref: string; href: string; title: string; total: number; status: StatusValue<'claim'> }[];
-  /** null values render "—" (not yet available: probation due → team page, claims → W2-005). */
+  recentClaims: { ref: string; href: string; title: string; total: number | string; status: StatusValue<'claim'> }[];
+  /** null values render "—" (value not available). */
   manager: { approvals: number; onLeaveToday: number; onLeaveWeek: number; probationDue: number | null; teamClaimsSubmitted: number | null } | null;
 };
 
@@ -171,7 +171,7 @@ function QuickActions() {
             </Button>
           </Grid>
           <Grid size={6}>
-            <Button fullWidth variant="contained" component={NextLink} href="/claims/new" startIcon={<ReceiptLongOutlinedIcon />} sx={btn}>
+            <Button fullWidth variant="contained" component={NextLink} href="/my/claims/new" startIcon={<ReceiptLongOutlinedIcon />} sx={btn}>
               New claim
             </Button>
           </Grid>
@@ -208,7 +208,7 @@ function ManagerPanel({ m }: { m: NonNullable<HomeData['manager']> }) {
     { label: 'Team on leave today', value: m.onLeaveToday, href: '/team/leave?when=today', accent: '#8F95A3' },
     { label: 'Team on leave this week', value: m.onLeaveWeek, href: '/team/leave?when=week', accent: '#8F95A3' },
     { label: 'Probation due in team', value: m.probationDue, href: '/team', accent: (m.probationDue ?? 0) > 0 ? '#B45309' : '#8F95A3' },
-    { label: 'Team claims submitted', value: m.teamClaimsSubmitted, href: '/team/claims?status=Submitted', accent: '#8F95A3' },
+    { label: 'Team claims submitted', value: m.teamClaimsSubmitted, href: '/approvals?tab=claims', accent: (m.teamClaimsSubmitted ?? 0) > 0 ? '#5A5FF2' : '#8F95A3' },
   ];
   return (
     <Card>
@@ -340,7 +340,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
                     label="Pending claims"
                     value={data.pendingClaims.count}
                     tone={data.pendingClaims.count > 0 ? 'warning' : 'grey'}
-                    href="/claims?status=Submitted"
+                    href="/my/claims?statuses=submitted"
                     subLine={
                       <>
                         <MoneyText amount={data.pendingClaims.amount} /> awaiting approval
@@ -496,7 +496,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
 
             <Card>
               <CardContent>
-                <CardTitle title="Recent claims" href={claimsDeferred ? undefined : '/claims'} />
+                <CardTitle title="Recent claims" href={claimsDeferred ? undefined : '/my/claims'} />
                 {claimsDeferred ? (
                   <Typography variant="body2" color="text.secondary">
                     Claims arrive with the claims module (W2-005).

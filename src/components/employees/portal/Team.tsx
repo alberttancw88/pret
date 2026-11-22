@@ -3,12 +3,13 @@
 // P31 · My team — S-AP-06 · /team · F-PRT-12 · US-PORTAL-012 (leave columns live since W2-004: TeamRow.leave).
 // P32 · Team member (limited profile) — S-AP-07 · /team/{employeeNo} · F-EMP-03 (M) · US-EMP-004.
 //   Only PRD "M" fields: A16 · A1 · A2 · A3 · A7 · B1 · B3 · B4 · C1–C5 · F1, F3–F6, F8–F13,
-//   F15–F19, F24, F27 · G1, G2, G5 · Leave / Claims (team scope → W2-004 / W2-005).
+//   F15–F19, F24, F27 · G1, G2, G5 · Leave / Claims (team scope; claims without batch / bank data).
 //   Never: MyKad, DOB, religion, race, OKU, family, statutory, bank, documents, notes, pay.
 //   RECORD PROBATION RECOMMENDATION (On Probation only) → P33.
 // P33 · Probation recommendation — S-AP-08 · dialog · Recommendation * (Confirm / Extend /
 //   Do not confirm) · Suggested extension (months 1–9, if Extend; total ≤ 12) · Remarks * 0/1000.
 import * as React from 'react';
+import { TeamMemberClaimsView } from '../../claims/EmployeeClaims';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -34,7 +35,7 @@ import { NumberInput, RadioInput, TextInput } from '../../forms/fields';
 import { useActionRunner } from '../../forms/useActionRunner';
 import { useToast } from '../../ToastProvider';
 import PageTitle from '../../shell/PageTitle';
-import { KVGrid, MiniTable, ProfileTabs, SectionCard, TabPlaceholder, useTabParam } from '../ui';
+import { KVGrid, MiniTable, ProfileTabs, SectionCard, useTabParam } from '../ui';
 import { EmploymentStatusChip, dateOr, phone } from '../labels';
 import { EmergencyTable } from '../profile/ContactTab';
 import { EmploymentFacts, SeparationFacts } from '../profile/EmploymentTab';
@@ -218,7 +219,7 @@ export function TeamMemberView({ m }: { m: TeamMemberProfile }) {
         </Stack>
       )}
       {tab === 'leave' && <TeamMemberLeaveView leave={m.leave} />}
-      {tab === 'claims' && <TabPlaceholder title="Available after W2-005" body={m.placeholders.claims || 'Team claims arrive with the claims module.'} />}
+      {tab === 'claims' && <TeamMemberClaimsView claims={m.claims} />}
       <RecommendationDialog open={rec} onClose={() => setRec(false)} m={m} />
     </Box>
   );

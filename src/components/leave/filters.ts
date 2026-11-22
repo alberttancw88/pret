@@ -58,7 +58,7 @@ export const DELEGATION_FILTERS = { q: '', approverUserId: '', approverName: '',
 export const DELEGATION_SORTS = ['from', 'approver', 'delegate'] as const;
 
 /** P26 · Approvals inbox (tab kept in the URL too). onlyMine default on. */
-export const INBOX_FILTERS = { q: '', departmentIds: '', locationIds: '', leaveTypeIds: '', from: '', to: '', emergencyOnly: '', onlyMine: 'yes' };
+export const INBOX_FILTERS = { q: '', departmentIds: '', locationIds: '', leaveTypeIds: '', from: '', to: '', emergencyOnly: '', onlyMine: 'yes', categoryIds: '', amountFrom: '', amountTo: '', flags: '', inBatch: '' };
 export const INBOX_SORTS = ['applied', 'from', 'employee', 'waiting'] as const;
 
 /** L13 · Year-end preview. */

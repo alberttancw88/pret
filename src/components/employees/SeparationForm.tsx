@@ -32,7 +32,7 @@ import { useActionRunner } from '../forms/useActionRunner';
 import ConfirmDialog from '../dialogs/ConfirmDialog';
 import { KVGrid, MiniTable } from './ui';
 import { optionsOf } from './labels';
-import { addDays, formatDate, todayMyt } from '@/lib/format';
+import { addDays, formatDate, formatMoney, todayMyt } from '@/lib/format';
 
 export default function SeparationForm({ profile }: { profile: EmployeeProfile }) {
   const router = useRouter();
@@ -217,6 +217,12 @@ export default function SeparationForm({ profile }: { profile: EmployeeProfile }
                       Pending approvals where {profile.personal.fullName} is the approver:{' '}
                       <strong>{preview.pendingApprovals}</strong>
                       {preview.pendingApprovals > 0 ? ' — will re-route (BR-LV-61)' : ''}
+                    </Typography>
+                  )}
+                  {preview.openClaims && (
+                    <Typography variant="body2">
+                      Open claims: {preview.openClaims.newCount} New · {preview.openClaims.submitted} Submitted · {preview.openClaims.approvedNotDisbursed} Approved not disbursed ({formatMoney(preview.openClaims.approvedAmount)})
+                      {preview.openClaims.approvedNotDisbursed > 0 ? ' — approved claims remain payable in the next month-end batch (BR-CLM-22).' : ''}
                     </Typography>
                   )}
                   {preview.leavePosition ? (

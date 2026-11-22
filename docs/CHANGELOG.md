@@ -9,6 +9,37 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.10] — 2026-11-22 — W2-005 Claims management built
+### Added
+- Claims setup (ADM/SA): categories (receipt rule, mileage rate, extra fields, eligibility, tax
+  treatment, GL / AutoCount mapping, cost centre), limits per transaction / month / year with
+  grade, department and employee overrides, claim policy settings; 20 categories seeded (PRD §7.5).
+- Claims: multi-line claims with SST, mileage (km × rate), receipt photo or file per line, limit,
+  deadline and duplicate checks, submit / withdraw, copy a rejected claim, limit utilisation.
+- Single-level approval (D12) through the existing approval engine; no self-approval and no
+  deciding a claim one entered on behalf; bulk decide; cancel an approved claim.
+- Admin: claims list with CSV / .xlsx / AutoCount / receipt zip, submit on behalf, bulk entry,
+  late-submission overrides.
+- Month-end disbursement: batches, new-batch wizard with cheque/cash section (D23), HLB Connect
+  First payment list (.xlsx + PDF, D6), mark disbursed, undo disbursement, AutoCount postings
+  .xlsx (D10, layout pending template), attachment zip.
+- Placeholders replaced: Home claims tiles, approvals inbox claims tabs, profile Claims tab, team
+  claims.
+- D31: mileage RM 0.50/km; mileage receipt required (Google Maps screenshot with start, end and km);
+  full account numbers on the on-screen HLB payment list for ADM/SA, every view access-logged;
+  placeholder GL and claims-payable accounts.
+- D32: MFA for Admin / Super Admin off on pret-dev for testing only (D19 still applies before
+  real data and in production).
+- Database: 7 migrations on `pret-dev` (15 new tables, RLS forced on all); synthetic claims and
+  bank details for sample employees only. `owner_employee.mjs` now advances the employee-number
+  counter.
+- Dependencies: `pdf-lib` 1.17.1, `jszip` 3.10.1 (pinned).
+- Tests: W2-005 role matrix 116/116, W2-004 130/130, W2-003 90/90, W2-002 91/91, foundation 86/86,
+  unit 97/97.
+### Known gaps
+- Not yet exercised in a browser. GL accounts, claims-payable account, HLB layout and bank codes
+  are placeholders until Albert provides real values. C1 summary report → W2-007.
+
 ## [0.2.9] — 2026-11-20 — Version number on the sign-in page
 ### Added
 - Sign-in page shows the app version below "PRET" (desktop brand panel and phone header),

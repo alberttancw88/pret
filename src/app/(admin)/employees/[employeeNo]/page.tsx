@@ -14,6 +14,9 @@ import {
 import { getOrgOptions } from '@/server/queries/org';
 import { getEmployeeLeave, getLeaveSetupOptions } from '@/server/queries/leave';
 import { yearOrUndef } from '@/components/leave/filters';
+import { getEmployeeClaims } from '@/server/queries/claims';
+import { CLAIM_STATUSES } from '@/server/contracts/claims';
+import { todayMyt } from '@/lib/format';
 import {
   ACTIVITY_EVENT_TYPES,
   CR_STATUSES,
@@ -68,6 +71,17 @@ export default async function EmployeeProfilePage({ params, searchParams }: { pa
   if (tab === 'leave') {
     const [leaveTab, setup] = await Promise.all([getEmployeeLeave(profile.id, yearOrUndef(spValue(sp, 'year') ?? '')), getLeaveSetupOptions()]);
     data.leave = { tab: leaveTab, types: setup.leaveTypes, currentYear: setup.currentYear };
+  }
+  if (tab === 'claims') {
+    const lp = readListParams(sp, { filters: { statuses: '', year: '' } });
+    const claimsTab = await getEmployeeClaims(profile.id, {
+      page: lp.page + 1,
+      pageSize: lp.rowsPerPage,
+      dir: 'desc',
+      statuses: pickList(lp.filters.statuses, CLAIM_STATUSES),
+      year: yearOrUndef(lp.filters.year),
+    });
+    data.claims = { tab: claimsTab, currentYear: Number(todayMyt().slice(0, 4)) };
   }
   if (tab === 'change_requests') {
     const res = await listChangeRequests({ employeeId: profile.id, statuses: [...CR_STATUSES], page: 1, pageSize: 100, sort: 'submittedAt', dir: 'desc' });

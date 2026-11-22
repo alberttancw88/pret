@@ -22,6 +22,7 @@ import {
 } from './common';
 import { checkMykad, normaliseMykad } from './mykad';
 import { openingLeaveSchema, type EmployeeLeaveTab, type LeaverPosition, type TeamLeaveSummary, type TeamMemberLeave } from './leave';
+import type { SeparationOpenClaims, TeamMemberClaims } from './claims';
 export type { EmployeeLeaveTab, LeaverPosition, TeamLeaveSummary, TeamMemberLeave, OpeningLeaveInput, OpeningLeaveForm } from './leave';
 
 export * from './common';
@@ -805,12 +806,12 @@ export type EmployeeProfile = {
   portal: PortalAccountView;
   completeness: Completeness;
   upcoming: UpcomingItem[];
-  /** leave counts (W2-004); claims arrive with W2-005 */
-  openItems: { changeRequests: number; documentsExpiringSoon: number; pendingLeave: number; pendingCredits: number };
+  /** leave counts (W2-004); claims (W2-005): pendingClaims = Submitted, approvedClaims = Approved not yet Disbursed */
+  openItems: { changeRequests: number; documentsExpiringSoon: number; pendingLeave: number; pendingCredits: number; pendingClaims: number; approvedClaims: number };
   /** Overview "Leave snapshot" — Available per visible type (current year) */
   leaveSnapshot: { leaveTypeId: string; code: string; name: string; available: string }[];
-  /** Tabs that arrive later render a placeholder: claims → W2-005, compensation/payslips → R1.1. leave = null (live since W2-004: getEmployeeLeave). */
-  placeholders: { leave: null; claims: string; compensation: string; payslips: string };
+  /** Tabs that arrive later render a placeholder: compensation/payslips → R1.1. leave / claims = null (live: getEmployeeLeave, getEmployeeClaims). */
+  placeholders: { leave: null; claims: null; compensation: string; payslips: string };
   can: EmployeeProfileCan;
 } & Stamps;
 
@@ -887,7 +888,9 @@ export type TeamMemberProfile = {
   myRecommendations: ProbationRecommendationView[];
   /** W2-004: leave section (balances + team-scope applications; no ledger — F-LV-28) */
   leave: TeamMemberLeave | null;
-  placeholders: { leave: null; claims: string };
+  /** W2-005: reportee's claims (no batch / bank data) — or getTeamMemberClaims */
+  claims: TeamMemberClaims | null;
+  placeholders: { leave: null; claims: null };
 };
 
 export const probationRecommendationSchema = z.object({
@@ -1100,8 +1103,8 @@ export type SeparationPreview = {
   leavePosition: LeaverPosition | null;
   /** open approval tasks where this person is the approver ("will re-route") */
   pendingApprovals: number | null;
-  /** W2-005 — null until then */
-  openClaims: null;
+  /** W2-005: open claims (BR-CLM-22 — approved claims remain payable after separation) */
+  openClaims: SeparationOpenClaims | null;
   warnings: string[];                    // e.g. maternity-period termination (BR-LV-43) once leave exists
 };
 export const withdrawResignationSchema = z.object({ employeeId: uuidSchema, remarks: requiredText(500, 'Remarks') });
@@ -1655,6 +1658,11 @@ export type EmployeeFormOptions = {
 //   TeamRow.leave: TeamLeaveSummary (P31) · TeamMemberProfile.leave: TeamMemberLeave (P32)
 //   SeparationPreview.leavePosition: LeaverPosition (E7, F-LV-27) · pendingApprovals: number
 //   join / continuous-service date changes (EC-EMP-05) recompute entitlements in the database (trigger)
+//
+// W2-005 additions (claims — implementations in ./claims register):
+//   EmployeeProfile.placeholders.claims = null → Claims tab uses getEmployeeClaims / fetchEmployeeClaimsTab (./claims)
+//   EmployeeProfile.openItems.pendingClaims / approvedClaims · TeamMemberProfile.claims: TeamMemberClaims (P32)
+//   SeparationPreview.openClaims: SeparationOpenClaims (E7)
 //
 // Error messages the UI may branch on (ActionFail.error is always a readable sentence):
 //   own E→CR field → "Use a change request for your own record." (fieldErrors on the field) ·

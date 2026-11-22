@@ -1,5 +1,6 @@
 import 'server-only';
 import { sql, withUserTx, type Tx } from '../db';
+import { claimOpenItems, openClaimsFor, teamMemberClaims } from './claims';
 import type { CurrentUser, Role } from '../auth/current-user';
 import { logRecordOpen, writeAccess } from '../audit';
 import { fieldCrypto } from '../crypto';
@@ -459,7 +460,7 @@ async function loadRecommendations(tx: Tx, id: string): Promise<ProbationRecomme
 
 const PLACEHOLDERS = {
   leave: null,
-  claims: 'Claims are available after W2-005 (claims management).',
+  claims: null,
   compensation: 'Compensation arrives with payroll (R1.1).',
   payslips: 'Payslips arrive with payroll (R1.1).',
 };
@@ -569,7 +570,7 @@ async function buildAdminProfile(tx: Tx, user: CurrentUser, accessToken: string,
     bank: { current: bank.find((x) => x.isCurrent) ?? null, history: bank },
     portal: { userId: portal?.user_id ?? null, state: portalState, inviteScheduledFor: portal?.invite_scheduled_for ?? null, lastLoginAt: iso(portal?.last_login_at) },
     completeness: completenessOf(comp?.missing ?? [], comp?.missing_payroll ?? [], comp?.total_checks ?? 13),
-    upcoming, openItems: { changeRequests: openCrs, documentsExpiringSoon: docsExpiring, ...leaveOpen }, leaveSnapshot, placeholders: PLACEHOLDERS,
+    upcoming, openItems: { changeRequests: openCrs, documentsExpiringSoon: docsExpiring, ...leaveOpen, ...(await claimOpenItems(tx, e.id)) }, leaveSnapshot, placeholders: PLACEHOLDERS,
     can: {
       editPersonal: true, editPhoto: true, editSensitive: !isOwn, editMykad: !isOwn, editEmployeeNo: isSa, editContact: true, editFamily: !isOwn,
       editEmployment: active, editTopOfOrg: isSa, addJobChange: active, editStatutory: !isOwn, editBank: !isOwn, reveal: true,
@@ -734,7 +735,8 @@ export async function getTeamMemberProfile(employeeNo: string): Promise<TeamMemb
       canRecommendProbation: e.status === 'on_probation',
       myRecommendations: recs,
       leave: await teamMemberLeave(tx, e.id),
-      placeholders: { leave: null, claims: PLACEHOLDERS.claims },
+      claims: await teamMemberClaims(tx, e.id),
+      placeholders: { leave: null, claims: null },
     };
   });
 }
@@ -872,7 +874,7 @@ export async function jobChangeContext(tx: Tx, employeeId: string, effectiveDate
     const n = (await sql<{ n: number }>`select count(*)::int as n from app.employees where manager_employee_id = ${employeeId}::uuid
         and status in ('pending_join','on_probation','confirmed','notice_period')`.execute(tx)).rows[0]?.n ?? 0;
     if (n) impacts.push(`${n} direct reportee(s) keep this person as manager.`);
-    impacts.push('Pending leave and claim approvals re-route to a new manager once the leave and claims modules are live (W2-004 / W2-005).');
+    impacts.push('Pending leave and claim approvals re-route to the new manager.');
     impacts.push('Leave entitlements will be recomputed from the effective date (W2-004).');
     return { rowInForce: row, impacts };
   }
@@ -917,7 +919,7 @@ export async function separationPreview(tx: Tx, employeeId: string, noticeDate: 
   return {
     noticeRequiredDays: days, noticeBasis: basis, expectedLastWorkingDay: expected, shortfallDays: Math.max(0, days - served),
     statusAfter: useLwd < today ? 'separated' : 'notice_period', defaultPortalAccessEnd: useLwd, maxPortalAccessEnd: addDays(useLwd, 30),
-    reporteeCount: reportees, leavePosition: await leaverPositionFor(tx, employeeId, useLwd), pendingApprovals, openClaims: null, warnings,
+    reporteeCount: reportees, leavePosition: await leaverPositionFor(tx, employeeId, useLwd), pendingApprovals, openClaims: await openClaimsFor(tx, employeeId), warnings,
   };
 }
 

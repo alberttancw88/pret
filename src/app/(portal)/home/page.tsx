@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 import { requireUser } from '@/server/auth/current-user';
 import { getHomeLeave } from '@/server/queries/leave';
+import { getHomeClaims } from '@/server/queries/claims';
+import { CLAIM_STATUS_LABELS } from '@/server/contracts/claims';
+import type { StatusValue } from '@/components/StatusChip';
+import { sumMoney } from '@/lib/format';
 import EmployeeHome, { type HomeData } from '@/components/dashboard/EmployeeHome';
 import { roleChipLabel } from '@/components/shell/nav';
 
@@ -10,10 +14,12 @@ export const dynamic = 'force-dynamic';
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 // S-PT-01 · /home — any signed-in employee user (manager panel for MGR). Leave parts are live (W2-004:
-// getHomeLeave — incl. the next 3 published holidays for my work state and probation-due counts); claims → W2-005.
+// getHomeLeave — incl. the next 3 published holidays for my work state and probation-due counts); claims parts live (W2-005: getHomeClaims).
 export default async function HomePage() {
   const user = await requireUser();
-  const leave = await getHomeLeave();
+  const [leave, claims] = await Promise.all([getHomeLeave(), getHomeClaims()]);
+  const submitted = claims.pending.filter((c) => c.status === 'submitted');
+  const claimChip = (s: keyof typeof CLAIM_STATUS_LABELS) => CLAIM_STATUS_LABELS[s] as StatusValue<'claim'>;
   const data: HomeData = {
     balances: leave.tiles.map((t, i) => {
       const noBalance = t.leaveType.entitlementMethod === 'no_entitlement' || t.leaveType.entitlementMethod === 'fixed_per_occurrence';
@@ -29,8 +35,11 @@ export default async function HomePage() {
         noBalanceLabel: noBalance ? t.availableLabel : undefined,
       };
     }),
-    pendingClaims: { count: 0, amount: 0 },
-    pendingItems: leave.pendingItems.map((p) => ({ ref: p.reference, href: p.href, label: p.label, set: 'generic' as const, status: p.status, tone: p.tone })),
+    pendingClaims: { count: submitted.length, amount: sumMoney(submitted.map((c) => c.total)) },
+    pendingItems: [
+      ...leave.pendingItems.map((p) => ({ ref: p.reference, href: p.href, label: p.label, set: 'generic' as const, status: p.status, tone: p.tone })),
+      ...claims.pending.map((c) => ({ ref: c.claimNo, href: c.href, label: c.label, set: 'claim' as const, status: claimChip(c.status) })),
+    ].slice(0, 5),
     upcomingLeave: leave.upcoming.map((u, i) => ({
       id: u.id,
       type: u.leaveType.name,
@@ -48,10 +57,10 @@ export default async function HomePage() {
       state: h.stateLabel,
     })),
     holidaysNote: leave.holidaysNote,
-    recentClaims: [],
+    recentClaims: claims.recent.slice(0, 3).map((c) => ({ ref: c.claimNo, href: c.href, title: c.title, total: c.total, status: claimChip(c.status) })),
     manager: leave.manager
-      ? { approvals: leave.manager.approvalsWaiting, onLeaveToday: leave.manager.teamOnLeaveToday, onLeaveWeek: leave.manager.teamOnLeaveThisWeek, probationDue: leave.manager.probationDue, teamClaimsSubmitted: null }
+      ? { approvals: leave.manager.approvalsWaiting, onLeaveToday: leave.manager.teamOnLeaveToday, onLeaveWeek: leave.manager.teamOnLeaveThisWeek, probationDue: leave.manager.probationDue, teamClaimsSubmitted: claims.manager?.teamClaimsSubmitted ?? null }
       : null,
   };
-  return <EmployeeHome displayName={user.displayName} roleLabel={roleChipLabel(user)} data={data} claimsDeferred />;
+  return <EmployeeHome displayName={user.displayName} roleLabel={roleChipLabel(user)} data={data} />;
 }

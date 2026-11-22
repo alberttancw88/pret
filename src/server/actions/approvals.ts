@@ -22,7 +22,7 @@ import { approverOptions, delegationRows, inboxCounts, inboxPage } from '../quer
 const ADMIN: Role[] = ['ADM', 'SA'];
 const TEAM: Role[] = ['MGR', 'ADM', 'SA'];
 const NOT_FOUND = { ok: false as const, error: NO_ACCESS };
-const MSGS = { 'PRET-SELF-001': "You can't decide your own request." };
+const MSGS = { 'PRET-SELF-001': "You can't decide your own request.", 'PRET-CLM-DECIDE-VIA-TASK': 'This item is not waiting for you.' };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type R = Record<string, any>;
 
@@ -44,13 +44,16 @@ export async function bulkDecide(input: Input): Promise<ActionResult<BulkDecisio
   return runAction(TEAM, bulkDecideSchema, input, async (d, { ctx }) => withUserTx({ ...ctx, reason: d.comment ?? ctx.reason }, async (tx) => {
     const rows: BulkDecisionRow[] = [];
     for (const id of [...new Set(d.taskIds)]) {
-      const info = (await sql<R>`select t.version, coalesce(a.ref_no, c.credit_no, '') as ref, coalesce(e.preferred_name, e.full_name, '') as name,
-            app.task_acting_as(t.id)::text as acting, t.subject_employee_id = app.current_employee_id() as own
+      const info = (await sql<R>`select t.version, coalesce(a.ref_no, c.credit_no, cl.claim_no, b.batch_no, '') as ref, coalesce(e.preferred_name, e.full_name, '') as name,
+            app.task_acting_as(t.id)::text as acting, coalesce(t.subject_employee_id = app.current_employee_id(), false) as own,
+            coalesce(t.subject_prepared_by = app.current_app_user_id(), false) as prepared
           from app.approval_tasks t left join app.leave_applications a on a.id = t.leave_application_id left join app.replacement_credits c on c.id = t.replacement_credit_id
+          left join app.claims cl on cl.id = t.claim_id left join app.disbursement_batches b on b.id = t.disbursement_batch_id
           left join app.employees e on e.id = t.subject_employee_id where t.id = ${id}::uuid`.execute(tx)).rows[0];
       if (!info) { rows.push({ taskId: id, reference: '', employeeName: '', outcome: 'skipped', note: 'Not found' }); continue; }
       // BR-LV-64: only items where the user is the current approver (no Admin override in bulk)
       if (info.own) { rows.push({ taskId: id, reference: info.ref, employeeName: info.name, outcome: 'skipped', note: 'Your own request' }); continue; }
+      if (info.prepared) { rows.push({ taskId: id, reference: info.ref, employeeName: info.name, outcome: 'skipped', note: 'You entered this item — another approver must decide' }); continue; }
       if (!info.acting || info.acting === 'admin_override') {
         rows.push({ taskId: id, reference: info.ref, employeeName: info.name, outcome: 'skipped', note: 'Not at your level' }); continue;
       }
@@ -92,7 +95,17 @@ export async function exportInboxCsv(params: Input): Promise<ActionResult<CsvFil
       return csvFile('approvals-credits', ['Credit no.', 'Employee no.', 'Employee', 'Date worked', 'Day type', 'Days', 'Reason', 'Submitted', 'Waiting (working days)'],
         page.rows.map((r) => [r.creditNo, r.employee.employeeNo, r.employee.name, csvDate(r.dateWorked), r.dayTypeLabel, r.days, r.reason, csvDateTime(r.submittedAt), r.waitingWorkingDays]));
     }
-    return csvFile(`approvals-${page.tab}`, ['Reference'], []);
+    if (page.tab === 'claims') {
+      return csvFile('approvals-claims', ['Claim no.', 'Employee no.', 'Employee', 'Department', 'Title', 'Lines', 'Total (RM)', 'SST (RM)', 'Attachments', 'Flags', 'Submitted', 'Waiting (working days)'],
+        page.rows.map((r) => [r.claimNo, r.employee.employeeNo, r.employee.name, r.department, r.title, r.lineCount, r.total, r.totalSst, r.attachmentCount,
+          r.flags.join('; '), csvDateTime(r.submittedAt), r.waitingWorkingDays]));
+    }
+    if (page.tab === 'claims_approved') {
+      return csvFile('approvals-approved-claims', ['Claim no.', 'Employee no.', 'Employee', 'Title', 'Total (RM)', 'Approved on', 'Approved by', 'Batch', 'Age (days)'],
+        page.rows.map((r) => [r.claimNo, r.employee.employeeNo, r.employee.name, r.title, r.total, csvDateTime(r.approvedAt), r.approvedByName, r.batchNo, r.ageDays]));
+    }
+    return csvFile('approvals-batches', ['Reference', 'Type', 'Period', 'Count', 'Total (RM)', 'Prepared by', 'Submitted'],
+      page.rows.map((r) => [r.batchNo, 'Disbursement batch', csvDate(r.period), r.count, r.total, r.preparedByName, csvDateTime(r.submittedAt)]));
   }));
 }
 export async function fetchInboxCounts(): Promise<ActionResult<{ counts: InboxCounts }>> {

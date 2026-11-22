@@ -5,6 +5,8 @@
 --   DATABASE_CA_CERT_FILE=private/supabase-ca.crt node --env-file=.env.local supabase/tests/run.cjs supabase/tests/w2_004_role_matrix.sql
 
 begin;
+-- W2-005: pin the security settings the assertions assume (pret-dev runs with MFA off / longer idle timeouts; rolled back)
+update app.security_settings set mfa_required_privileged = true, idle_timeout_min_employee = 30, idle_timeout_min_privileged = 15 where id = 1;
 
 create temp table t_results (id serial primary key, test text not null, pass boolean not null, detail text);
 create temp table fx (n text primary key, auth_id uuid, app_id uuid, emp_id uuid);

@@ -202,3 +202,55 @@ export async function signedPhotoUrls(accessToken: string, files: { bucket: stri
   }
   return out;
 }
+
+/**
+ * W2-005 generated outputs (ADR-0011): register an intent in the private 'generated' bucket (ADM/SA — app.can_upload_for),
+ * upload the server-built bytes AS THE USER (Storage RLS applies), then verify + activate (app.confirm_upload).
+ * `scope` is the folder under out/ (e.g. `hlb/<batchId>/v2`). Returns the active file id.
+ */
+export async function storeGeneratedFile(
+  ctx: UserTxContext,
+  accessToken: string,
+  input: { scope: string; fileName: string; mimeType: string; bytes: Buffer; dataCategory?: DataCategory | null },
+): Promise<{ fileId: string; sha256: string }> {
+  const intent = await requestUpload(ctx, accessToken, {
+    subject: 'generated_output', ownerEmployeeId: null, scope: input.scope, originalName: input.fileName,
+    mimeType: input.mimeType, sizeBytes: input.bytes.length, dataCategory: input.dataCategory ?? null,
+  });
+  const supabase = createSupabaseUserClient(accessToken);
+  const { error } = await supabase.storage.from(intent.bucket).uploadToSignedUrl(intent.path, intent.token, input.bytes, { contentType: input.mimeType, upsert: false });
+  if (error) throw new Error('PRET-FILE-UPLOAD-URL');
+  const r = await confirmUpload(ctx, accessToken, intent.fileId);
+  return { fileId: intent.fileId, sha256: r.sha256 };
+}
+
+/**
+ * Reads files for a bundle (C16): one logged grant per file (purpose 'bundle' — the DB trigger writes audit.access_log),
+ * then the bytes are fetched AS THE USER. Files the caller may not read are skipped (returned in `skipped`).
+ */
+export async function readFilesForBundle(ctx: UserTxContext, accessToken: string, fileIds: string[]) {
+  const files = await withUserTx(ctx, async (tx) => {
+    const out: { id: string; bucket: string; storage_path: string; original_name: string; mime_type: string }[] = [];
+    for (const id of fileIds) {
+      const f = await tx.selectFrom('app.files').select(['id', 'bucket', 'storage_path', 'original_name', 'mime_type'])
+        .where('id', '=', id).where('status', '=', 'active').executeTakeFirst();
+      if (!f) continue;
+      const ok = (await sql<{ ok: boolean }>`select app.can_read_file(${id}::uuid) as ok`.execute(tx)).rows[0]?.ok;
+      if (!ok) continue;
+      await tx.insertInto('app.file_access_grants').values({
+        file_id: id, user_id: sql<string>`app.current_app_user_id()`, purpose: 'bundle', reason: null, expires_at: sql<Date>`now() + interval '2 minutes'`,
+      }).execute();
+      out.push(f);
+    }
+    return out;
+  });
+  const supabase = createSupabaseUserClient(accessToken);
+  const read: { id: string; name: string; mime: string; bytes: Buffer }[] = [];
+  const skipped: string[] = fileIds.filter((id) => !files.some((f) => f.id === id));
+  for (const f of files) {
+    const { data, error } = await supabase.storage.from(f.bucket).download(f.storage_path);
+    if (error || !data) { skipped.push(f.id); continue; }
+    read.push({ id: f.id, name: f.original_name, mime: f.mime_type, bytes: Buffer.from(await data.arrayBuffer()) });
+  }
+  return { read, skipped };
+}

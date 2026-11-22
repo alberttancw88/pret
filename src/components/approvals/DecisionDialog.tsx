@@ -24,9 +24,10 @@ import { TextInput } from '../forms/fields';
 import { useToast } from '../ToastProvider';
 
 export type DecisionKind = 'approve' | 'reject' | 'override_approve' | 'override_reject';
-export type DecisionSubject = 'leave' | 'cancellation' | 'credit';
+export type DecisionSubject = 'leave' | 'cancellation' | 'credit' | 'claim' | 'batch';
 
 function titleFor(kind: DecisionKind, subject: DecisionSubject, ref: string) {
+  if (subject === 'batch') return kind === 'approve' ? `Approve batch ${ref}?` : `Return batch ${ref} to the preparer?`;
   const what = subject === 'cancellation' ? `cancellation of ${ref}` : ref;
   switch (kind) {
     case 'approve':
@@ -40,6 +41,8 @@ function titleFor(kind: DecisionKind, subject: DecisionSubject, ref: string) {
   }
 }
 function confirmLabel(kind: DecisionKind, subject: DecisionSubject) {
+  if (subject === 'batch') return kind === 'approve' ? 'Approve batch' : 'Return';
+  if (subject === 'claim') return kind === 'approve' ? 'Approve claim' : 'Reject claim';
   const c = subject === 'cancellation' ? ' cancellation' : '';
   if (kind === 'approve') return `Approve${c}`;
   if (kind === 'reject') return `Reject${c}`;
@@ -87,7 +90,7 @@ export function DecisionDialog({
 
   const confirm = async () => {
     if (short) {
-      setFieldError(override ? 'Give the reason for the Admin override (at least 5 characters).' : 'Add a comment to reject (at least 5 characters).');
+      setFieldError(override ? 'Give the reason for the Admin override (at least 5 characters).' : subject === 'claim' ? 'Add a reason (at least 5 characters).' : subject === 'batch' ? 'Add a comment for the preparer (at least 5 characters).' : 'Add a comment to reject (at least 5 characters).');
       return;
     }
     setBusy(true);
@@ -95,7 +98,7 @@ export function DecisionDialog({
     try {
       const res = await decideTask({ taskId, decision, comment: comment.trim() || null, expectedVersion: taskVersion, asOverride: override });
       if (res.ok) {
-        toast.success(res.message || (decision === 'approve' ? `${reference} approved.` : `${reference} rejected.`));
+        toast.success(res.message || (decision === 'approve' ? `${reference} approved.` : subject === 'batch' ? `${reference} returned.` : `${reference} rejected.`));
         onClose();
         onDone?.(res);
         router.refresh();
@@ -140,7 +143,7 @@ export function DecisionDialog({
         </Typography>
       )}
       <TextInput
-        label={override ? 'Reason' : 'Comment'}
+        label={override || (subject === 'claim' && decision === 'reject') ? 'Reason' : 'Comment'}
         required={needsComment}
         value={comment}
         onChange={(v) => {
@@ -151,7 +154,15 @@ export function DecisionDialog({
         multiline
         minRows={3}
         error={fieldError}
-        helper={needsComment ? 'Required — at least 5 characters. Shown to the employee.' : 'Optional. Shown to the employee.'}
+        helper={
+          subject === 'batch'
+            ? needsComment
+              ? 'Required — at least 5 characters. Shown to the preparer.'
+              : 'Optional.'
+            : needsComment
+              ? 'Required — at least 5 characters. Shown to the employee.'
+              : 'Optional. Shown to the employee.'
+        }
       />
     </ResponsiveDialog>
   );
@@ -164,6 +175,7 @@ export function BulkDecisionDialog({
   decision,
   items,
   itemLabel = 'items',
+  rejectWord = 'Decline',
   onClose,
   onDone,
 }: {
@@ -171,6 +183,8 @@ export function BulkDecisionDialog({
   decision: Decision;
   items: { taskId: string; reference: string }[];
   itemLabel?: string;
+  /** "Decline" (leave, BR-LV-64) / "Reject" (claims, F-CLM-25) */
+  rejectWord?: 'Decline' | 'Reject';
   onClose: () => void;
   onDone?: () => void;
 }) {
@@ -193,7 +207,7 @@ export function BulkDecisionDialog({
 
   const run = async () => {
     if (short) {
-      setFieldError('Add a comment to decline (at least 5 characters).');
+      setFieldError(`Add a comment to ${rejectWord.toLowerCase()} (at least 5 characters).`);
       return;
     }
     setBusy(true);
@@ -215,8 +229,8 @@ export function BulkDecisionDialog({
   };
 
   const title = result
-    ? `${reject ? 'Declined' : 'Approved'}: ${result.approved + result.moved + result.rejected} of ${result.rows.length}`
-    : `${reject ? 'Decline' : 'Approve'} ${items.length} selected ${itemLabel}`;
+    ? `${reject ? `${rejectWord}ed` : 'Approved'}: ${result.approved + result.moved + result.rejected} of ${result.rows.length}`
+    : `${reject ? rejectWord : 'Approve'} ${items.length} selected ${itemLabel}`;
 
   return (
     <ResponsiveDialog
@@ -242,7 +256,7 @@ export function BulkDecisionDialog({
               Back
             </Button>
             <Button variant="contained" color={reject ? 'error' : 'primary'} onClick={run} loading={busy}>
-              {reject ? 'Decline selected' : 'Approve selected'}
+              {reject ? `${rejectWord} selected` : 'Approve selected'}
             </Button>
           </>
         )

@@ -40,6 +40,8 @@ import PageTitle from '../../shell/PageTitle';
 import { ProfileTabs, TabPlaceholder, useTabParam, type TabDef } from '../ui';
 import type { EmployeeLeaveTab } from '@/server/contracts/leave';
 import { EmployeeLeaveTabView } from '../../leave/EmployeeLeave';
+import type { EmployeeClaimsTab } from '@/server/contracts/claims';
+import { EmployeeClaimsTabView } from '../../claims/EmployeeClaims';
 import type { SetupType } from '../../leave/AdjustOverride';
 import { CompletenessBadge, EmploymentStatusChip, dateOr } from '../labels';
 import type { ProfileCtx } from './context';
@@ -62,6 +64,8 @@ export type ProfileTabData = {
   changeRequests: { rows: ChangeRequestRow[]; total: number } | null;
   /** W2-004 Leave tab (loaded only when the tab is open) */
   leave?: { tab: EmployeeLeaveTab | null; types: SetupType[]; currentYear: number } | null;
+  /** W2-005 Claims tab (loaded only when the tab is open) */
+  claims?: { tab: EmployeeClaimsTab | null; currentYear: number } | null;
 };
 
 const PORTAL_CHIP: Partial<Record<PortalAccountState, 'Invited' | 'Active' | 'Disabled'>> = {
@@ -89,7 +93,7 @@ export default function EmployeeProfileView({ ctx, data }: { ctx: ProfileCtx; da
     { value: 'payslips', label: 'Payslips', hint: 'Release 1.1' },
     { value: 'bank', label: 'Bank' },
     { value: 'leave', label: 'Leave', count: profile.openItems.pendingLeave + profile.openItems.pendingCredits || null },
-    { value: 'claims', label: 'Claims' },
+    { value: 'claims', label: 'Claims', count: profile.openItems.pendingClaims || null },
     { value: 'documents', label: 'Documents' },
     { value: 'change_requests', label: 'Change requests', count: profile.openItems.changeRequests || null },
     { value: 'notes', label: 'Notes' },
@@ -116,7 +120,7 @@ export default function EmployeeProfileView({ ctx, data }: { ctx: ProfileCtx; da
     { label: 'Withdraw offer', onClick: () => setDlg('offer'), show: can.withdrawOffer },
     { label: 'Rehire', href: `/employees/${no}/rehire`, show: can.rehire },
     { label: 'Apply leave on behalf', href: `/leave/apply-on-behalf?employee=${encodeURIComponent(profile.id)}`, show: !profile.isOwnRecord },
-    { label: 'Submit claim on behalf', disabled: 'Available after W2-005', show: true },
+    { label: 'Submit claim on behalf', href: `/claims/new-on-behalf?employee=${encodeURIComponent(profile.id)}`, show: !profile.isOwnRecord },
     { label: 'Adjust leave balance', href: `${pathname}?tab=leave&action=adjust`, show: !profile.isOwnRecord },
     { label: 'Add HR note', onClick: () => setDlg('note'), show: can.addNote },
   ];
@@ -154,7 +158,7 @@ export default function EmployeeProfileView({ ctx, data }: { ctx: ProfileCtx; da
           <EmployeeLeaveTabView tab={data.leave.tab} types={data.leave.types} currentYear={data.leave.currentYear} isSuperAdmin={ctx.isSuperAdmin} isOwnRecord={profile.isOwnRecord} />
         ) : null;
       case 'claims':
-        return <TabPlaceholder title="Available after W2-005" body={profile.placeholders.claims || 'Claims for this employee arrive with the claims module (W2-005).'} />;
+        return data.claims ? <EmployeeClaimsTabView tab={data.claims.tab} employeeId={profile.id} currentYear={data.claims.currentYear} /> : null;
       case 'documents':
         return data.documents ? (
           <DocumentsTab employeeId={profile.id} rows={data.documents.rows} total={data.documents.total} params={data.documents.params} canUpload={can.uploadDocument} own={profile.isOwnRecord} />

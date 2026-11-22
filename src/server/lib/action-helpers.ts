@@ -128,6 +128,16 @@ const CODE_MESSAGES: Record<string, { message?: string; field?: string }> = {
   'PRET-ROLLOVER-STALE': { message: 'Preview the roll-over again before running it.' },
   'PRET-DLG-DELEGATE': { message: 'The delegate must be an active employee user.', field: 'delegateUserId' },
   'PRET-DLG-CANCEL-ONLY': { message: 'Delegations can only be ended.' },
+  // W2-005 claims + disbursement
+  'PRET-CLM-LOCKED': { message: 'Only New claims can be edited.' },
+  'PRET-CLM-NO-EMPLOYEE': { message: 'Your employee record has not been created yet.' },
+  'PRET-CLM-REASON': { field: 'reason' },
+  'PRET-CLM-RATE': { message: 'Enter the mileage rate (RM/km).', field: 'mileageRate' },
+  'PRET-CLM-CODE-LOCKED': { message: 'The code cannot change once the category has been used.', field: 'code' },
+  'PRET-CLM-LIMIT-OVERLAP': { field: 'effectiveFrom' },
+  'PRET-CLM-DECIDE-VIA-TASK': { message: 'This item is not waiting for you.' },
+  'PRET-BATCH-OUT-OF-DATE': { message: 'Regenerate the outputs first — they are out of date.' },
+  'PRET-BATCH-TOTALS': { message: undefined },
 };
 
 const CONSTRAINT_FIELDS: Record<string, { field: string; message: string }> = {
@@ -177,6 +187,20 @@ const CONSTRAINT_FIELDS: Record<string, { field: string; message: string }> = {
   ex_band_overlap: { field: 'rows', message: 'Bands overlap.' },
   chk_reject_comment: { field: 'comment', message: 'Add a comment to reject.' },
   chk_not_self_decision: { field: 'form', message: "You can't decide your own request." },
+  // W2-005
+  ux_claim_categories_code: { field: 'code', message: 'This code is already in use.' },
+  ux_claim_categories_name: { field: 'name', message: 'This name is already in use.' },
+  ux_claim_rate_effective: { field: 'mileageRateFrom', message: 'A rate with this effective date already exists.' },
+  chk_limit_order: { field: 'perMonth', message: 'Per month must be at least per transaction, and per year at least per month.' },
+  chk_limit_amount: { field: 'perTransaction', message: 'Enter at least one amount.' },
+  chk_limit_dates: { field: 'effectiveTo', message: 'To must be on or after From.' },
+  chk_target: { field: 'targetId', message: 'Select the target.' },
+  chk_eligible_statuses: { field: 'eligibleStatuses', message: 'Select at least one status.' },
+  chk_sst: { field: 'form', message: 'SST cannot be more than the amount.' },
+  ux_myinvois_uuid_live: { field: 'form', message: 'This MyInvois UUID is already claimed.' },
+  ux_batch_claim_active: { field: 'claimIds', message: 'A selected claim is already in another open batch.' },
+  ux_regular_batch_per_month: { field: 'disbursementMonth', message: 'A regular batch already exists for this month.' },
+  chk_not_out_of_date_disbursed: { field: 'form', message: 'Regenerate the outputs first — they are out of date.' },
 };
 
 function sentence(s: string): string {

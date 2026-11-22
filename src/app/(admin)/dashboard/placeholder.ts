@@ -28,6 +28,6 @@ export const ADMIN_DASHBOARD_PLACEHOLDER: Omit<AdminDashboardData, 'asAt'> = {
     total: 18816.51,
     awaiting: { count: 6, amount: 1204.1 },
     approvedNd: { count: 11, amount: 2140.6, aged: 2 },
-    batch: { ref: 'PB-2026-011', href: '/admin/claims/batches/PB-2026-011', status: 'Exported', outOfDate: true },
+    batch: { ref: 'PB-2026-011', href: '/claims/batches/PB-2026-011', status: 'Exported', outOfDate: true },
   },
 };

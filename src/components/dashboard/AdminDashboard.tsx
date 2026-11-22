@@ -174,10 +174,10 @@ export default function AdminDashboard({ data, placeholder }: { data: AdminDashb
         }
       >
         <Box sx={GRID_SX}>
-          <KpiTile label="Submitted" value={claims.submitted} tone={amberIf(claims.submitted)} href="/admin/claims?status=Submitted" />
-          <KpiTile label="Approved (not disbursed)" value={claims.approvedNotDisbursed} tone="info" href="/admin/claims?status=Approved" />
-          <KpiTile label="Disbursed" value={claims.disbursed} tone="success" href="/admin/claims?status=Disbursed" />
-          <KpiTile label="Rejected" value={claims.rejected} tone="grey" href="/admin/claims?status=Rejected" />
+          <KpiTile label="Submitted" value={claims.submitted} tone={amberIf(claims.submitted)} href="/claims?statuses=submitted" />
+          <KpiTile label="Approved (not disbursed)" value={claims.approvedNotDisbursed} tone="info" href="/claims?statuses=approved" />
+          <KpiTile label="Disbursed" value={claims.disbursed} tone="success" href="/claims?statuses=disbursed" />
+          <KpiTile label="Rejected" value={claims.rejected} tone="grey" href="/claims?statuses=rejected" />
         </Box>
 
         <Card sx={{ mt: 2 }}>
@@ -241,7 +241,7 @@ export default function AdminDashboard({ data, placeholder }: { data: AdminDashb
               </Typography>
             </KpiTile>
           ) : (
-            <KpiTile label="Current month-end batch" tone="grey" href="/admin/claims/batches" subLine="No open batch" />
+            <KpiTile label="Current month-end batch" tone="grey" href="/claims/batches" subLine="No open batch" />
           )}
         </Box>
       </DashboardSection>

@@ -47,6 +47,7 @@ import { DecisionDialog, type DecisionKind, type DecisionSubject } from '../appr
 import { LeaveFlags, LeaveStatusChip, PanelRow, TaskStatusChip, TypeLabel, daysText, formatDays, openUrl } from './common';
 import OwnLeaveDialogs, { type OwnLeaveTarget } from './OwnLeaveDialogs';
 import { AttachmentPicker, formatBytes, uploadLeaveFile, type UploadedFile } from './upload';
+import { stickyBarSx } from '../forms/stickyBar';
 
 const card = { p: { xs: 2, sm: 3 } } as const;
 
@@ -486,17 +487,7 @@ export default function LeaveApplicationView({ app, mode, backHref }: { app: Lea
       {/* Actions — sticky on phone */}
       {hasActions && (
         <Box
-          sx={{
-            position: { xs: 'sticky', sm: 'static' },
-            bottom: 'var(--pret-bottom-bar, 0px)',
-            zIndex: 2,
-            bgcolor: { xs: 'background.paper', sm: 'transparent' },
-            borderTop: { xs: '1px solid', sm: 0 },
-            borderColor: 'divider',
-            mx: { xs: -2, sm: 0 },
-            px: { xs: 2, sm: 0 },
-            py: { xs: 1.5, sm: 0 },
-          }}
+          sx={stickyBarSx}
         >
           <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap" useFlexGap>
             {backHref && (

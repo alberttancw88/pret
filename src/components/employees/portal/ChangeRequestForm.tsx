@@ -52,6 +52,7 @@ import { ChildFields, childToForm, type ChildForm } from '../profile/FamilyTab';
 import { boolToYesNo, dateOr, newIdempotencyKey, optionsOf, YES_NO_OPTIONS, yesNoToBool } from '../labels';
 import { formatBytes, IMAGE_PDF_ACCEPT, uploadChangeRequestFile } from '../upload';
 import { addDays, todayMyt } from '@/lib/format';
+import { stickyBarSx } from '../../forms/stickyBar';
 
 type Att = { file: File; fileId: string | null; error: string | null; busy: boolean };
 type SpouseRow = { id?: string; fullName: string; mykad: string; marriageDate: string; workingStatus: string; isOku: boolean; incomeTaxNo: string; reliefClaimedByEmployee: string; recordStatus: string; currentMasked?: string };
@@ -605,7 +606,7 @@ export default function ChangeRequestForm({
           </Card>
         </>
       )}
-      <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ position: { xs: 'sticky', sm: 'static' }, bottom: { xs: 'var(--pret-bottom-bar, 0px)', sm: 0 }, bgcolor: { xs: 'background.default', sm: 'transparent' }, py: { xs: 1.5, sm: 0 }, zIndex: 1 }}>
+      <Stack direction="row" spacing={1} justifyContent="flex-end" sx={stickyBarSx}>
         <Button variant="outlined" color="inherit" onClick={() => (dirty ? setGuard(true) : router.push('/my/profile/change-requests'))} disabled={saving}>
           Cancel
         </Button>

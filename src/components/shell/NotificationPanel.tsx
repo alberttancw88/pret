@@ -96,8 +96,9 @@ export default function NotificationPanel({ anchorEl, onClose, items, phone, onM
                     height: 8,
                     borderRadius: '50%',
                     flexShrink: 0,
-                    bgcolor: n.unread ? '#5A5FF2' : 'transparent',
-                    border: n.unread ? 'none' : '1px solid #8F95A3',
+                    bgcolor: n.unread ? 'primary.main' : 'transparent',
+                    border: n.unread ? 'none' : '1px solid',
+                    borderColor: 'grey.500',
                   }}
                 />
                 <Box sx={{ minWidth: 0, flex: 1 }}>

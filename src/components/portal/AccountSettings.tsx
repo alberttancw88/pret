@@ -216,7 +216,7 @@ function PasswordTab({ settings }: { settings: AccountSettingsData }) {
               {rules.map((r) => {
                 const ok = testFor(r)?.(next) ?? false;
                 return (
-                  <Typography key={r} component="li" variant="body2" sx={{ color: ok ? '#0F6B40' : 'text.secondary', py: 0.25 }}>
+                  <Typography key={r} component="li" variant="body2" sx={{ color: ok ? 'success.dark' : 'text.secondary', py: 0.25 }}>
                     {ok ? '✓' : '○'} {r}
                     <Box component="span" sx={visuallyHidden}>
                       {ok ? ' — met' : ' — not met'}
@@ -366,7 +366,7 @@ function NotificationsTab({ initial }: { initial: NotificationPreferences }) {
                 {byCategory.map(({ c, rows }) => (
                   <React.Fragment key={c}>
                     <TableRow>
-                      <TableCell colSpan={3} sx={{ bgcolor: '#F7F7F9', fontWeight: 600 }}>
+                      <TableCell colSpan={3} sx={{ bgcolor: 'grey.50', fontWeight: 600 }}>
                         {NOTIFICATION_CATEGORY_LABELS[c]}
                       </TableCell>
                     </TableRow>

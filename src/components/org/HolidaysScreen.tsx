@@ -393,20 +393,20 @@ export default function HolidaysScreen({ year, years, summary, rows, total, para
                 <Grid key={c.state} size={{ xs: 12, md: 6 }}>
                   <Stack direction="row" spacing={1} alignItems="flex-start">
                     {c.blocking || c.warning ? (
-                      <WarningAmberIcon fontSize="small" sx={{ color: c.blocking ? '#B42318' : '#B45309', mt: 0.25 }} aria-hidden />
+                      <WarningAmberIcon fontSize="small" sx={{ color: c.blocking ? 'error.main' : 'warning.main', mt: 0.25 }} aria-hidden />
                     ) : (
-                      <CheckCircleOutlineIcon fontSize="small" sx={{ color: '#198754', mt: 0.25 }} aria-hidden />
+                      <CheckCircleOutlineIcon fontSize="small" sx={{ color: 'success.main', mt: 0.25 }} aria-hidden />
                     )}
                     <Typography variant="body2">
                       <strong>{stateLabel(c.state)}</strong> · {c.compulsoryPresent.length} of 5 compulsory · {c.paidHolidayCount} paid
                       {c.compulsoryMissing.length > 0 && (
-                        <Box component="span" sx={{ color: '#B42318' }}>
+                        <Box component="span" sx={{ color: 'error.main' }}>
                           {' '}
                           — missing {c.compulsoryMissing.map((m) => COMPULSORY_HOLIDAY_LABELS[m]).join(', ')} (publishing blocked)
                         </Box>
                       )}
                       {c.paidHolidayCount < 11 && (
-                        <Box component="span" sx={{ color: '#7A4100' }}>
+                        <Box component="span" sx={{ color: 'warning.dark' }}>
                           {' '}
                           — fewer than 11 paid holidays
                         </Box>

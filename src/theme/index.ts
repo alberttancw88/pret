@@ -1,3 +1,3 @@
-export { theme, default } from './theme';
-export { palette, tone, leaveType } from './palette';
-export type { Tone, ToneName, PretLayout } from './augment';
+export { theme, default, radius, pretLayout } from './theme';
+export { palette, tone, tile, hero, leaveType, surface, toToneName, tileFor, TILE_ORDER } from './palette';
+export type { Tone, ToneName, Tile, TileName, Hero, Density, PretLayout } from './augment';

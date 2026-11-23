@@ -104,10 +104,10 @@ export default function HolidayCalendarView({
                           borderRadius: 1,
                           fontWeight: 700,
                           fontSize: '0.875rem',
-                          bgcolor: replacement ? '#EDEDFE' : '#FFF1DB',
-                          color: replacement ? '#3A3FBF' : '#7A4100',
+                          bgcolor: replacement ? 'tone.violet.bg' : 'tone.warning.bg',
+                          color: replacement ? 'tone.violet.fg' : 'warning.dark',
                           border: '1px solid',
-                          borderColor: replacement ? '#C7C9FB' : '#F5C77E',
+                          borderColor: replacement ? 'grey.300' : 'warning.light',
                         }}
                         className="pret-tnum"
                       >

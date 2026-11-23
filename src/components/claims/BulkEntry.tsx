@@ -200,7 +200,7 @@ export default function BulkEntry({ categories }: { categories: CategoryRow[] })
               { key: 'e', header: 'Employee', render: (r) => r.employee.name },
               { key: 'l', header: 'Lines', render: (r) => r.lines },
               { key: 't', header: 'Total (RM)', align: 'right', render: (r) => <MoneyCell v={r.total} /> },
-              { key: 'r', header: 'Result', render: (r) => <Typography component="span" variant="body2" sx={{ color: r.ok ? '#198754' : '#B42318' }}>{r.ok ? '✓ ' : '✕ '}{r.result}</Typography> },
+              { key: 'r', header: 'Result', render: (r) => <Typography component="span" variant="body2" sx={{ color: r.ok ? 'success.main' : 'error.main' }}>{r.ok ? '✓ ' : '✕ '}{r.result}</Typography> },
             ]}
           />
           <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
@@ -293,7 +293,7 @@ export default function BulkEntry({ categories }: { categories: CategoryRow[] })
                     </TableCell>
                     <TableCell sx={{ minWidth: 160 }}>
                       {r.status && (
-                        <Typography variant="body2" sx={{ color: r.status.ok ? '#198754' : '#B42318' }}>
+                        <Typography variant="body2" sx={{ color: r.status.ok ? 'success.main' : 'error.main' }}>
                           {r.status.ok ? '✓' : `✕ ${r.status.message ?? ''}`}
                         </Typography>
                       )}

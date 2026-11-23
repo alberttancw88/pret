@@ -511,7 +511,7 @@ export function JobChangeDialog({
     if (k === 'manager') return (base.manager?.id ?? '') !== (f.manager?.id ?? '');
     return base[k] !== f[k];
   };
-  const hl = (k: keyof ReturnType<typeof fromRow>) => (changed(k) ? { '& .MuiOutlinedInput-notchedOutline': { borderColor: '#5A5FF2', borderWidth: 2 } } : undefined);
+  const hl = (k: keyof ReturnType<typeof fromRow>) => (changed(k) ? { '& .MuiOutlinedInput-notchedOutline': { borderColor: 'primary.main', borderWidth: 2 } } : undefined);
   const loc = org.locations.find((l) => l.id === f.workLocationId);
   const typeOptions = (isPastEdit ? (['data_correction'] as const) : MANUAL_JOB_CHANGE_TYPES).map((t) => ({ value: t, label: JOB_CHANGE_TYPE_LABELS[t] }));
   const future = f.effectiveDate > today;

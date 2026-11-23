@@ -146,7 +146,7 @@ export function EmployeeLeaveTabView({
             </Stack>
           </Stack>
           {isOwnRecord && (
-            <Typography variant="body2" sx={{ mt: 1, color: '#B45309' }}>
+            <Typography variant="body2" sx={{ mt: 1, color: 'warning.main' }}>
               This is your own record — adjustments, overrides and applying on behalf are done by another Admin or Super Admin.
             </Typography>
           )}

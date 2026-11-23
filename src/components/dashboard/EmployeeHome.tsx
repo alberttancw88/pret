@@ -1,7 +1,9 @@
 'use client';
 
-// Employee / Manager Home (S-PT-01) — dashboard-visuals.md §2 and §3.1.
-// Phone-first single column at 360 px; desktop 12-col (left 8 / right 4).
+// Employee / Manager Home (S-PT-01) — dashboard-visuals.md §2 and §3.1; Sunrise portal Home
+// (theme-tokens.md §8.4): violet hero with greeting + pastel leave-balance tiles, 2 × 2 pastel
+// quick-action tiles, then white portal cards. The hero exists ONLY here (calm rule 2).
+// Phone-first single column at 360 px; desktop: hero full width, then 12-col (left 8 / right 4).
 import * as React from 'react';
 import NextLink from 'next/link';
 import Alert from '@mui/material/Alert';
@@ -21,8 +23,9 @@ import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import StatusChip, { chipSx, type StatusValue } from '../StatusChip';
-import type { ToneName } from '@/theme/augment';
+import StatusChip, { chipBaseSx, chipSx, type StatusValue } from '../StatusChip';
+import type { TileName } from '@/theme/augment';
+import { toToneName } from '@/theme/palette';
 import MoneyText from '../MoneyText';
 import DateText from '../DateText';
 import EmptyState from '../EmptyState';
@@ -97,124 +100,227 @@ function CardTitle({ title, href, linkLabel = 'See all' }: { title: string; href
   );
 }
 
-function BalanceCard({ b }: { b: LeaveBalance }) {
+const BALANCE_HUES: TileName[] = ['lavender', 'mint', 'peach', 'sky', 'rose'];
+
+/** Pastel balance tile inside the hero (§8.4 / §8.5): tile bg, one ink colour for all text. */
+function BalanceTile({ b, hue }: { b: LeaveBalance; hue: TileName }) {
+  const ink = `tile.${hue}.ink`;
   return (
-    <Card sx={{ height: '100%', scrollSnapAlign: 'start' }}>
-      <CardActionArea component={NextLink} href={b.href ?? '/my/leave/balances'} sx={{ height: '100%' }}>
-        <Box sx={{ display: 'flex', height: '100%' }}>
-          <Box aria-hidden sx={(t) => ({ width: 4, flexShrink: 0, bgcolor: b.colour ?? t.palette.leaveType[b.colorIndex % t.palette.leaveType.length] })} />
-          <Box sx={{ p: 2, flex: 1, minWidth: 0 }}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Box
-                aria-hidden
-                sx={(t) => ({ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, bgcolor: b.colour ?? t.palette.leaveType[b.colorIndex % t.palette.leaveType.length] })}
-              />
-              <Typography variant="body2" fontWeight={600} noWrap>
-                {b.name}
-              </Typography>
-            </Stack>
-            {b.available === null ? (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                {b.noBalanceLabel ?? 'Approval only'}
-              </Typography>
-            ) : (
-              <>
-                <Stack direction="row" alignItems="baseline" spacing={0.5} sx={{ mt: 0.5 }}>
-                  <Typography variant="kpi" component="p" sx={{ color: b.available < 0 ? '#B42318' : 'text.primary' }}>
-                    {`${b.available < 0 ? '−' : ''}${Math.abs(b.available).toFixed(1)}`}
-                  </Typography>
-                  <Typography variant="body2" fontWeight={500} color="text.secondary">
-                    d
-                  </Typography>
-                </Stack>
-                <Typography variant="caption" color="text.secondary" component="p">
-                  Available
+    <Card sx={{ height: '100%', scrollSnapAlign: 'start', bgcolor: `tile.${hue}.bg`, border: 'none', borderRadius: '20px' }}>
+      <CardActionArea component={NextLink} href={b.href ?? '/my/leave/balances'} sx={{ height: '100%', alignItems: 'stretch' }}>
+        <Box sx={{ px: { xs: 1.75, md: 2.25 }, py: { xs: 1.5, md: 2 }, minWidth: 0, color: ink }}>
+          <Stack direction="row" spacing={0.75} alignItems="center">
+            <Box
+              aria-hidden
+              sx={(t) => ({ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, bgcolor: b.colour ?? t.palette.leaveType[b.colorIndex % t.palette.leaveType.length] })}
+            />
+            <Typography variant="caption" component="p" noWrap sx={{ fontWeight: 700, color: ink }}>
+              {b.name}
+            </Typography>
+          </Stack>
+          {b.available === null ? (
+            <Typography variant="body2" sx={{ mt: 1.5, color: ink, fontWeight: 600 }}>
+              {b.noBalanceLabel ?? 'Approval only'}
+            </Typography>
+          ) : (
+            <>
+              <Stack direction="row" alignItems="baseline" spacing={0.5} sx={{ mt: 0.5 }}>
+                <Typography variant="kpi" component="p" sx={{ color: b.available < 0 ? 'error.dark' : ink }}>
+                  {`${b.available < 0 ? '−' : ''}${Math.abs(b.available).toFixed(1)}`}
                 </Typography>
-                {b.available < 0 && b.allowedNegative !== undefined && (
-                  <Typography variant="caption" color="text.secondary" component="p">
-                    Allowed down to −{b.allowedNegative.toFixed(1)}
-                  </Typography>
-                )}
-                {b.earnedToDate !== undefined && (
-                  <Typography variant="caption" color="text.secondary" component="p">
-                    {b.earnedToDate.toFixed(1)} earned to date
-                  </Typography>
-                )}
-              </>
-            )}
-            {b.expiring && (
-              <Stack
-                direction="row"
-                spacing={0.75}
-                sx={{ mt: 1, p: 1, borderRadius: 1, bgcolor: '#FFF1DB', color: '#7A4100' }}
-              >
-                <WarningAmberIcon aria-hidden sx={{ fontSize: 16, mt: '1px' }} />
-                <Typography variant="caption" component="p">
-                  {b.expiring.days.toFixed(1)} expires {formatDate(b.expiring.date)}
+                <Typography variant="body2" fontWeight={600} sx={{ color: ink }}>
+                  d
                 </Typography>
               </Stack>
-            )}
-          </Box>
+              <Typography variant="caption" component="p" sx={{ color: ink }}>
+                Available
+              </Typography>
+              {b.available < 0 && b.allowedNegative !== undefined && (
+                <Typography variant="caption" component="p" sx={{ color: ink }}>
+                  Allowed down to −{b.allowedNegative.toFixed(1)}
+                </Typography>
+              )}
+              {b.earnedToDate !== undefined && (
+                <Typography variant="caption" component="p" sx={{ color: ink }}>
+                  {b.earnedToDate.toFixed(1)} earned to date
+                </Typography>
+              )}
+            </>
+          )}
+          {b.expiring && (
+            <Stack direction="row" spacing={0.75} sx={{ mt: 1, px: 1, py: 0.75, borderRadius: '12px', bgcolor: 'tone.warning.bg', color: 'tone.warning.fg' }}>
+              <WarningAmberIcon aria-hidden sx={{ fontSize: 16, mt: '1px' }} />
+              <Typography variant="caption" component="p">
+                {b.expiring.days.toFixed(1)} expires {formatDate(b.expiring.date)}
+              </Typography>
+            </Stack>
+          )}
         </Box>
       </CardActionArea>
     </Card>
   );
 }
 
-function QuickActions() {
-  const btn = { minHeight: 48, justifyContent: 'flex-start' } as const;
+/** "Monday · 23/11/2026" in Malaysia time. */
+function todayLine() {
+  const now = new Date();
+  const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long', timeZone: 'Asia/Kuala_Lumpur' }).format(now);
+  return `${weekday} · ${formatDate(now)}`;
+}
+
+/** Portal Home hero (§8.4): gradient, greeting, leave balances. */
+function PortalHero({ displayName, roleLabel, balances }: { displayName: string; roleLabel: string; balances: LeaveBalance[] }) {
   return (
-    <Card>
-      <CardContent>
-        <CardTitle title="Quick actions" />
-        <Grid container spacing={1.5}>
-          <Grid size={6}>
-            <Button fullWidth variant="contained" component={NextLink} href="/my/leave/apply" startIcon={<EventAvailableOutlinedIcon />} sx={btn}>
-              Apply leave
-            </Button>
-          </Grid>
-          <Grid size={6}>
-            <Button fullWidth variant="contained" component={NextLink} href="/my/claims/new" startIcon={<ReceiptLongOutlinedIcon />} sx={btn}>
-              New claim
-            </Button>
-          </Grid>
-          <Grid size={6}>
-            <Button
-              fullWidth
-              variant="outlined"
-              color="inherit"
-              component={NextLink}
-              href="/my/leave/credits/new"
-              startIcon={<SwapHorizOutlinedIcon />}
-              sx={{ ...btn, lineHeight: 1.3 }}
-            >
-              Request replacement credit
-            </Button>
-          </Grid>
-          <Grid size={6}>
-            {/* R1.1: payslips. Shown disabled-with-reason until payroll ships. */}
-            <Box component="span" title="Payslips arrive with Release 1.1" sx={{ display: 'block' }}>
-              <Button fullWidth variant="outlined" color="inherit" disabled startIcon={<RequestQuoteOutlinedIcon />} sx={btn}>
-                My payslips
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
-      </CardContent>
+    <Box
+      component="section"
+      aria-label="Greeting and leave balances"
+      className="pret-on-dark"
+      sx={(t) => ({
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: { xs: '26px', md: '28px' },
+        background: t.palette.hero.gradient,
+        boxShadow: t.palette.hero.shadow,
+        color: '#FFFFFF',
+        px: { xs: 2, md: 3 },
+        pt: { xs: 2.25, md: 3 },
+        pb: { xs: 2, md: 3 },
+      })}
+    >
+      {/* Decorative circle only — never under text beyond the 5.84 : 1 worst case. */}
+      <Box
+        aria-hidden
+        sx={(t) => ({ position: 'absolute', top: -40, right: -40, width: 140, height: 140, borderRadius: '50%', bgcolor: t.palette.hero.decor, pointerEvents: 'none' })}
+      />
+      <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1} sx={{ position: 'relative' }}>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="body2" sx={(t) => ({ color: t.palette.hero.subtext })} suppressHydrationWarning>
+            {todayLine()}
+          </Typography>
+          <Typography variant="h3" component="h2" sx={{ color: '#FFFFFF', mt: 0.25, overflowWrap: 'anywhere', '@media (max-width:599.95px)': { fontSize: '1.5rem', lineHeight: '2rem' } }}>
+            Hi, {displayName}
+          </Typography>
+        </Box>
+        <Chip
+          label={roleLabel}
+          size="small"
+          sx={[chipSx('violet', 'filled'), chipBaseSx(true), { flexShrink: 0, mt: 0.5 }]}
+        />
+      </Stack>
+
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: { xs: 1.5, md: 2.5 }, mb: 1, position: 'relative' }}>
+        <Typography variant="h6" component="h3" sx={{ color: '#FFFFFF' }}>
+          Leave balances
+        </Typography>
+        <Link
+          component={NextLink}
+          href="/my/leave/balances"
+          underline="always"
+          variant="body2"
+          sx={{ color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', minHeight: 44, px: 0.5 }}
+        >
+          All
+          <ChevronRightIcon aria-hidden sx={{ fontSize: 16 }} />
+        </Link>
+      </Stack>
+
+      {balances.length === 0 ? (
+        <Box sx={{ bgcolor: 'background.paper', color: 'text.primary', borderRadius: '20px', position: 'relative' }}>
+          <EmptyState title="No leave types available yet — contact HR" minHeight={120} />
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            position: 'relative',
+            display: { xs: 'flex', md: 'grid' },
+            gridTemplateColumns: { md: 'repeat(3, minmax(0, 1fr))' },
+            gap: { xs: 1.25, md: 2 },
+            overflowX: { xs: 'auto', md: 'visible' },
+            scrollSnapType: { xs: 'x mandatory', md: 'none' },
+            // Phone: tiles bleed to the hero edge and scroll sideways.
+            mx: { xs: -2, md: 0 },
+            px: { xs: 2, md: 0 },
+            pb: { xs: 0.5, md: 0 },
+            scrollbarWidth: 'none',
+            '& > *': { flex: { xs: '0 0 148px', md: 'initial' } },
+          }}
+        >
+          {balances.map((b, i) => (
+            <BalanceTile key={b.id} b={b} hue={BALANCE_HUES[i % BALANCE_HUES.length]} />
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+/** 2 × 2 pastel quick-action tiles (§8.4): lavender, mint, peach, sky; label in the tile ink. */
+function QuickActionTile({ href, label, icon: Icon, hue, disabledReason }: { href?: string; label: string; icon: React.ElementType; hue: TileName; disabledReason?: string }) {
+  const body = (
+    <Stack spacing={1} justifyContent="space-between" sx={{ p: 1.75, minHeight: 84, height: '100%', alignItems: 'flex-start' }}>
+      <Box
+        aria-hidden
+        sx={{ width: 36, height: 36, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.7)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Icon sx={{ fontSize: 20 }} />
+      </Box>
+      <Typography variant="subtitle2" component="span" sx={{ fontWeight: 700, lineHeight: '18px', color: 'inherit' }}>
+        {label}
+      </Typography>
+    </Stack>
+  );
+  const sx = { height: '100%', bgcolor: `tile.${hue}.bg`, color: `tile.${hue}.ink`, border: 'none', borderRadius: '20px' } as const;
+  if (disabledReason || !href) {
+    return (
+      <Card sx={{ ...sx, opacity: 0.6, cursor: 'not-allowed' }} title={disabledReason} aria-disabled="true" role="group" aria-label={`${label} (${disabledReason ?? 'unavailable'})`}>
+        {body}
+      </Card>
+    );
+  }
+  return (
+    <Card sx={{ ...sx, transition: 'box-shadow 150ms', '&:hover': { boxShadow: 4 } }}>
+      <CardActionArea component={NextLink} href={href} sx={{ height: '100%' }}>
+        {body}
+      </CardActionArea>
     </Card>
+  );
+}
+
+function QuickActions() {
+  return (
+    <Box component="section" aria-label="Quick actions">
+      <Typography variant="h6" component="h2" sx={{ mb: 1.25 }}>
+        Quick actions
+      </Typography>
+      <Grid container spacing={1.25}>
+        <Grid size={6}>
+          <QuickActionTile href="/my/leave/apply" label="Apply leave" icon={EventAvailableOutlinedIcon} hue="lavender" />
+        </Grid>
+        <Grid size={6}>
+          <QuickActionTile href="/my/claims/new" label="New claim" icon={ReceiptLongOutlinedIcon} hue="mint" />
+        </Grid>
+        <Grid size={6}>
+          <QuickActionTile href="/my/leave/credits/new" label="Request replacement credit" icon={SwapHorizOutlinedIcon} hue="peach" />
+        </Grid>
+        <Grid size={6}>
+          {/* R1.1: payslips. Shown disabled-with-reason until payroll ships. */}
+          <QuickActionTile label="My payslips" icon={RequestQuoteOutlinedIcon} hue="sky" disabledReason="Payslips arrive with Release 1.1" />
+        </Grid>
+      </Grid>
+    </Box>
   );
 }
 
 function ManagerPanel({ m }: { m: NonNullable<HomeData['manager']> }) {
   const rows = [
-    { label: 'Approvals waiting', value: m.approvals, href: '/approvals', accent: m.approvals > 0 ? '#5A5FF2' : '#8F95A3' },
-    { label: 'Team on leave today', value: m.onLeaveToday, href: '/team/leave?when=today', accent: '#8F95A3' },
-    { label: 'Team on leave this week', value: m.onLeaveWeek, href: '/team/leave?when=week', accent: '#8F95A3' },
-    { label: 'Probation due in team', value: m.probationDue, href: '/team', accent: (m.probationDue ?? 0) > 0 ? '#B45309' : '#8F95A3' },
-    { label: 'Team claims submitted', value: m.teamClaimsSubmitted, href: '/approvals?tab=claims', accent: (m.teamClaimsSubmitted ?? 0) > 0 ? '#5A5FF2' : '#8F95A3' },
+    { label: 'Approvals waiting', value: m.approvals, href: '/approvals', accent: m.approvals > 0 ? 'primary.main' : 'grey.300' },
+    { label: 'Team on leave today', value: m.onLeaveToday, href: '/team/leave?when=today', accent: 'grey.300' },
+    { label: 'Team on leave this week', value: m.onLeaveWeek, href: '/team/leave?when=week', accent: 'grey.300' },
+    { label: 'Probation due in team', value: m.probationDue, href: '/team', accent: (m.probationDue ?? 0) > 0 ? 'warning.main' : 'grey.300' },
+    { label: 'Team claims submitted', value: m.teamClaimsSubmitted, href: '/approvals?tab=claims', accent: (m.teamClaimsSubmitted ?? 0) > 0 ? 'primary.main' : 'grey.300' },
   ];
   return (
-    <Card>
+    <Card variant="portal">
       <CardContent sx={{ pb: '8px !important' }}>
         <CardTitle title="Manager" />
         <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0 }}>
@@ -231,7 +337,8 @@ function ManagerPanel({ m }: { m: NonNullable<HomeData['manager']> }) {
                   color: 'text.primary',
                   textDecoration: 'none',
                   borderTop: '1px solid',
-                  borderColor: 'divider',
+                  borderColor: 'rowDivider',
+                  borderRadius: '10px',
                   '&:hover': { bgcolor: 'action.hover' },
                 }}
               >
@@ -239,10 +346,10 @@ function ManagerPanel({ m }: { m: NonNullable<HomeData['manager']> }) {
                 <Typography variant="body2" sx={{ flex: 1 }}>
                   {r.label}
                 </Typography>
-                <Typography className="pret-tnum" sx={{ fontSize: '1.25rem', lineHeight: 1.4, fontWeight: 700, color: r.value ? 'text.primary' : 'text.secondary' }}>
+                <Typography className="pret-tnum" sx={{ fontSize: '1.25rem', lineHeight: 1.4, fontWeight: 800, color: r.value ? 'text.primary' : 'text.secondary' }}>
                   {r.value ?? '—'}
                 </Typography>
-                <ChevronRightIcon aria-hidden sx={{ fontSize: 18, color: '#4548C9' }} />
+                <ChevronRightIcon aria-hidden sx={{ fontSize: 18, color: 'primary.dark', mr: 0.5 }} />
               </Box>
             </li>
           ))}
@@ -268,7 +375,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
           <Chip
             size="small"
             label={p.status}
-            sx={[chipSx((['grey', 'indigo', 'success', 'info', 'warning', 'error', 'purple'].includes(p.tone) ? p.tone : 'grey') as ToneName, 'filled'), { height: 24, borderRadius: '6px', fontWeight: 600, fontSize: '0.75rem' }]}
+            sx={[chipSx(toToneName(p.tone), 'filled'), chipBaseSx()]}
           />
         );
     }
@@ -282,48 +389,12 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
         </Alert>
       )}
 
-      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-        <Typography variant="h5" component="h2">
-          Hi, {displayName}
-        </Typography>
-        <Chip
-          label={roleLabel}
-          size="small"
-          sx={{ height: 20, fontSize: '0.6875rem', bgcolor: '#5A5FF2', color: '#FFFFFF', '& .MuiChip-label': { px: 1 } }}
-        />
-      </Stack>
+      <PortalHero displayName={displayName} roleLabel={roleLabel} balances={data.balances} />
 
       <Grid container spacing={3}>
         {/* Left 8 */}
         <Grid size={{ xs: 12, md: 8 }}>
           <Stack spacing={3}>
-            <Box component="section" aria-label="Leave balances">
-              <CardTitle title="Leave balances" href="/my/leave/balances" linkLabel="All" />
-              {data.balances.length === 0 ? (
-                <Card>
-                  <EmptyState title="No leave types available yet — contact HR" minHeight={120} />
-                </Card>
-              ) : (
-                <Box
-                  sx={{
-                    display: { xs: 'flex', sm: 'grid' },
-                    gridTemplateColumns: { sm: 'repeat(auto-fill, minmax(200px, 1fr))' },
-                    gap: 2,
-                    overflowX: { xs: 'auto', sm: 'visible' },
-                    scrollSnapType: { xs: 'x mandatory', sm: 'none' },
-                    mx: { xs: -2, sm: 0 },
-                    px: { xs: 2, sm: 0 },
-                    pb: { xs: 0.5, sm: 0 },
-                    '& > *': { flex: { xs: '0 0 168px', sm: 'initial' } },
-                  }}
-                >
-                  {data.balances.map((b) => (
-                    <BalanceCard key={b.id} b={b} />
-                  ))}
-                </Box>
-              )}
-            </Box>
-
             {/* Phone/tablet: quick actions directly under balances (one tap from Home). */}
             <Box sx={{ display: { xs: 'block', md: 'none' } }}>
               <QuickActions />
@@ -353,7 +424,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
                 )}
               </Grid>
               <Grid size={{ xs: 12, sm: 7 }}>
-                <Card sx={{ height: '100%' }}>
+                <Card variant="portal" sx={{ height: '100%' }}>
                   <CardContent>
                     <CardTitle title="My pending items" href="/my/leave?statuses=pending,cancellation_pending" />
                     {data.pendingItems.length === 0 ? (
@@ -369,7 +440,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
                             direction="row"
                             alignItems="center"
                             spacing={1}
-                            sx={{ minHeight: 56, borderTop: '1px solid', borderColor: 'divider' }}
+                            sx={{ minHeight: 56, borderTop: '1px solid', borderColor: 'rowDivider' }}
                           >
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Link component={NextLink} href={p.href} variant="body2" className="pret-tnum" sx={TAP_LINK}>
@@ -389,7 +460,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
               </Grid>
             </Grid>
 
-            <Card>
+            <Card variant="portal">
               <CardContent>
                 <CardTitle title="Upcoming leave" href="/my/leave" />
                 {data.upcomingLeave.length === 0 ? (
@@ -405,7 +476,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
                         direction="row"
                         alignItems="center"
                         spacing={1.5}
-                        sx={{ minHeight: 48, borderTop: '1px solid', borderColor: 'divider' }}
+                        sx={{ minHeight: 48, borderTop: '1px solid', borderColor: 'rowDivider' }}
                       >
                         <Box
                           aria-hidden
@@ -445,7 +516,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
               </Box>
             )}
 
-            <Card>
+            <Card variant="portal">
               <CardContent>
                 <CardTitle title="Public holidays" href="/my/holidays" />
                 {data.holidays.length === 0 ? (
@@ -464,9 +535,9 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
                               width: 40,
                               height: 40,
                               flexShrink: 0,
-                              borderRadius: 1,
-                              bgcolor: '#EDEDFE',
-                              color: '#3A3FBF',
+                              borderRadius: '12px',
+                              bgcolor: 'tile.lavender.bg',
+                              color: 'tile.lavender.ink',
                               display: 'flex',
                               flexDirection: 'column',
                               alignItems: 'center',
@@ -488,7 +559,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
                               {h.weekday}, {formatDate(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`)}
                             </Typography>
                           </Box>
-                          <Chip label={h.state} size="small" variant="outlined" sx={{ color: '#374151', borderColor: '#8F95A3' }} />
+                          <Chip label={h.state} size="small" sx={[chipSx('grey', 'outlined'), chipBaseSx()]} />
                         </Stack>
                       );
                     })}
@@ -497,7 +568,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
               </CardContent>
             </Card>
 
-            <Card>
+            <Card variant="portal">
               <CardContent>
                 <CardTitle title="Recent claims" href={claimsDeferred ? undefined : '/my/claims'} />
                 {claimsDeferred ? (
@@ -517,7 +588,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
                         direction="row"
                         spacing={1}
                         alignItems="center"
-                        sx={{ minHeight: 56, borderTop: '1px solid', borderColor: 'divider' }}
+                        sx={{ minHeight: 56, borderTop: '1px solid', borderColor: 'rowDivider' }}
                       >
                         <Box sx={{ flex: 1, minWidth: 0 }}>
                           <Link component={NextLink} href={c.href} variant="body2" className="pret-tnum" sx={TAP_LINK}>

@@ -29,7 +29,7 @@ import { useToast } from '../ToastProvider';
 import ListPage, { type ListColumn, type SortState } from '../list/ListPage';
 import { DateFilter, KeywordField, SelectFilter } from '../list/FilterFields';
 import { csvFileName, downloadCsv, toCsv } from '../list/csv';
-import KpiTile, { GRID_SX } from '../dashboard/KpiTile';
+import KpiTile, { GRID_SX, PASTEL_ORDER } from '../dashboard/KpiTile';
 import { formatAmount, formatDate } from '@/lib/format';
 
 // ---------------------------------------------------------------- synthetic rows
@@ -242,7 +242,7 @@ export default function ComponentGallery() {
         PRET components (dev only)
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        W2-001 visual review. Synthetic data only. This route returns 404 in production.
+        W2-001 visual review, Sunrise theme (W2-009). Synthetic data only. This route returns 404 in production.
       </Typography>
 
       <Stack spacing={3}>
@@ -338,9 +338,25 @@ export default function ComponentGallery() {
           </Table>
         </Section>
 
-        <Section title="KPI tiles">
+        <Section title="KPI tiles — pastel strip (max 4, dashboards and Employees list)">
+          <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' } }}>
+            {PASTEL_ORDER.map((hue, i) => (
+              <KpiTile
+                key={hue}
+                variant="pastel"
+                hue={hue}
+                label={['Active employees', 'On probation', 'Notice period', 'Profiles complete'][i]}
+                value={[42, 6, 2, '94%'][i]}
+                subLine={['+3 this month', 'Due in 30 days: 2', 'Last day 31/12/2026', 'Synthetic data'][i]}
+                href={i < 2 ? '#' : undefined}
+              />
+            ))}
+          </Box>
+        </Section>
+
+        <Section title="KPI tiles — quiet (money and approval screens)">
           <Box sx={GRID_SX}>
-            <KpiTile label="Active headcount" value={42} tone="indigo" href="#" />
+            <KpiTile label="Active headcount" value={42} tone="violet" href="#" />
             <KpiTile label="Pending approvals" value={5} secondary="(2 at Admin level)" tone="warning" href="#" />
             <KpiTile label="Rejected" value={0} tone="grey" />
             <KpiTile label="Awaiting approval" value={6} secondary={<MoneyText amount={1204.1} />} tone="warning" href="#" />
@@ -384,7 +400,7 @@ export default function ComponentGallery() {
             open={confirm === 'positive'}
             title="Mark PB-2026-011 disbursed?"
             body={
-              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: '#E6F4EC', color: '#0F6B40' }}>
+              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'tone.success.bg', color: 'success.dark' }}>
                 <Typography variant="body2">
                   11 claims for 6 employees, <MoneyText amount={2140.6} /> will become Disbursed and each employee will be notified.
                 </Typography>
@@ -448,16 +464,16 @@ export default function ComponentGallery() {
           <Stack spacing={1}>
             <Typography variant="h1">h1 PRET 32/40</Typography>
             <Typography variant="h2">h2 28/36</Typography>
-            <Typography variant="h3">h3 Page title 24/32</Typography>
+            <Typography variant="h3">h3 Page title 26/34</Typography>
             <Typography variant="h4">h4 Dialog title 20/28</Typography>
             <Typography variant="h5">h5 Section 18/26</Typography>
             <Typography variant="h6">h6 Card title 16/24</Typography>
             <Typography variant="subtitle1">subtitle1 Person name 16/24</Typography>
             <Typography variant="subtitle2">subtitle2 Nav label 14/20</Typography>
-            <Typography variant="body1">body1 Form values 16/24</Typography>
+            <Typography variant="body1">body1 Form values 15/22 (phone 16/24)</Typography>
             <Typography variant="body2">body2 Table cells 14/20</Typography>
             <Typography variant="caption">caption Timestamps 12/18</Typography>
-            <Typography variant="overline">overline Section label 11/16</Typography>
+            <Typography variant="overline">overline Section label 12/16</Typography>
             <Typography variant="kpi">1,234</Typography>
           </Stack>
         </Section>

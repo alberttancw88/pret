@@ -14,6 +14,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { surface } from '@/theme/palette';
 
 export type TreePerson = {
   id: string;
@@ -92,7 +93,7 @@ function PersonBox({ node, selected, highlighted, onClick }: { node: TreeNode; s
         borderRadius: 1,
         bgcolor: 'background.paper',
         border: '1px solid',
-        borderColor: highlighted || selected ? '#5A5FF2' : 'divider',
+        borderColor: highlighted || selected ? 'primary.main' : 'divider',
         boxShadow: highlighted ? '0 0 0 3px rgba(90,95,242,0.25)' : undefined,
       }}
     >
@@ -134,7 +135,7 @@ function ChartNode({
   onSelect?: (id: string) => void;
 }) {
   const open = expanded.has(node.id);
-  const line = '#C9CCD6';
+  const line = surface.handle;
   return (
     <Box component="li" sx={{ listStyle: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', px: 1, pt: 2 }}>
       <Stack alignItems="center" spacing={0.5}>
@@ -189,7 +190,7 @@ function ListNode({
   const active = selectedId === node.id || highlightId === node.id;
   return (
     <Box component="li" role="treeitem" aria-expanded={node.children.length ? open : undefined} aria-selected={selectedId === node.id} sx={{ listStyle: 'none' }}>
-      <Stack direction="row" alignItems="center" sx={{ pl: node.depth * 2, minHeight: 44, borderRadius: 1, bgcolor: active ? '#EDEDFE' : undefined }}>
+      <Stack direction="row" alignItems="center" sx={{ pl: node.depth * 2, minHeight: 44, borderRadius: 1, bgcolor: active ? 'tone.violet.bg' : undefined }}>
         <Box sx={{ width: 36, flexShrink: 0 }}>
           {node.children.length > 0 && (
             <IconButton size="small" onClick={() => toggle(node.id)} aria-label={`${open ? 'Collapse' : 'Expand'} ${node.name}`}>
@@ -292,7 +293,7 @@ const OrgTree = React.forwardRef<
     );
   }
   return (
-    <Box ref={containerRef} sx={{ overflow: 'auto', maxHeight: '70vh', bgcolor: '#F7F7F9', borderRadius: 1, p: 2 }} aria-label={label} role="region">
+    <Box ref={containerRef} sx={{ overflow: 'auto', maxHeight: '70vh', bgcolor: 'grey.50', borderRadius: 1, p: 2 }} aria-label={label} role="region">
       <Box sx={{ transform: `scale(${zoom})`, transformOrigin: 'top left', width: 'max-content' }}>
         <Box component="ul" sx={{ display: 'flex', p: 0, m: 0 }}>
           {roots.map((r) => (

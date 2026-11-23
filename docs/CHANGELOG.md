@@ -9,6 +9,21 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.12] — 2026-11-23 — W2-009 Sunrise UI refresh
+### Changed
+- New visual design "Sunrise" (D34, D35 — GATE 2 approved) for admin and self-service, desktop and
+  phone: violet primary, Plus Jakarta Sans, rounded cards, pill buttons and chips, labels above
+  fields, sentence-case buttons, pastel nav icon tiles, violet hero on portal Home and sign-in,
+  floating phone bottom bar and action bars, comfortable/compact density toggle on admin lists.
+- About 180 hard-coded colours replaced by theme tokens. Visual change only: fields, flows, roles,
+  validation and data unchanged.
+### Added
+- Design direction docs and Sunrise theme tokens (`docs/design/ui/refresh/`); 9 contrast unit tests
+  (unit 116/116).
+### Known gaps
+- Signed-in screens not yet reviewed in a browser. `design-system.md` / `components.md` still
+  carry the old values (revision pass to follow).
+
 ## [0.2.11] — 2026-11-23 — W2-006 Self-service portal completed
 ### Added
 - P11 public holidays (`/my/holidays`, list and calendar) and P20 download my data (zip with JSON,

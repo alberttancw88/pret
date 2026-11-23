@@ -470,12 +470,12 @@ export default function LineEditor({
             <Stack spacing={0.5}>
               <LimitChip check={l.check.limit} />
               {l.check.duplicate && (
-                <Typography variant="body2" sx={{ color: '#B45309' }}>
+                <Typography variant="body2" sx={{ color: 'warning.main' }}>
                   ⚠ Possible duplicate: {l.check.duplicate}. Your approver will see this flag.
                 </Typography>
               )}
               {l.check.deadline.lateOverride && (
-                <Typography variant="body2" sx={{ color: '#B45309' }}>
+                <Typography variant="body2" sx={{ color: 'warning.main' }}>
                   Late (override)
                 </Typography>
               )}

@@ -58,8 +58,8 @@ export default function ResponsiveDialog({
             'aria-modal': true,
             'aria-labelledby': id,
             sx: {
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
               maxHeight: '90dvh',
               boxShadow: 8,
               borderRight: 0,
@@ -68,9 +68,9 @@ export default function ResponsiveDialog({
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1 }} aria-hidden>
-          <Box sx={{ width: 32, height: 4, borderRadius: 2, bgcolor: '#D3D6DE' }} />
+          <Box sx={{ width: 32, height: 4, borderRadius: 2, bgcolor: 'grey.300' }} />
         </Box>
-        <Typography id={id} variant="h4" component="h2" sx={{ px: 2, pt: 1.5, pb: 1 }}>
+        <Typography id={id} variant="h4" component="h2" sx={{ px: 2.5, pt: 1.5, pb: 1 }}>
           {title}
         </Typography>
         <Box sx={{ px: 2, pb: 2, overflowY: 'auto' }}>{children}</Box>

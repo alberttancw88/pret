@@ -33,6 +33,7 @@ import HourglassEmptyOutlinedIcon from '@mui/icons-material/HourglassEmptyOutlin
 import ErrorSummary from '../forms/ErrorSummary';
 import RecordFooter, { type RecordMeta } from '../forms/RecordFooter';
 import { KeyValue } from '../forms/fields';
+import { IconBlob } from '../EmptyState';
 
 // ---------------------------------------------------------------------------
 // Tabs (?tab= in the URL so Back and deep links keep the tab)
@@ -80,7 +81,7 @@ export function ProfileTabs({ tabs, value, onChange, label = 'Profile sections' 
     );
   }
   return (
-    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
+    <Box sx={{ mb: 2 }}>
       <Tabs value={value} onChange={(_e, v: string) => onChange(v)} variant="scrollable" allowScrollButtonsMobile aria-label={label}>
         {tabs.map((t) => (
           <Tab
@@ -91,7 +92,7 @@ export function ProfileTabs({ tabs, value, onChange, label = 'Profile sections' 
               t.count !== undefined && t.count !== null ? (
                 <Stack direction="row" spacing={0.75} alignItems="center">
                   <span>{t.label}</span>
-                  <Box component="span" sx={{ px: 0.75, borderRadius: 8, fontSize: 12, bgcolor: t.value === value ? '#EDEDFE' : '#ECEEF3', color: t.value === value ? '#3A3FBF' : '#374151' }}>
+                  <Box component="span" sx={{ px: 0.75, borderRadius: 8, fontSize: 12, bgcolor: t.value === value ? 'background.paper' : 'tone.grey.bg', color: t.value === value ? 'tone.violet.fg' : 'tone.grey.fg', fontWeight: 700 }}>
                     {t.count}
                   </Box>
                 </Stack>
@@ -328,7 +329,7 @@ export function TabPlaceholder({ title, body, links }: { title: string; body: st
     <Card>
       <CardContent>
         <Stack spacing={1.5} alignItems="center" sx={{ textAlign: 'center', py: 5, maxWidth: 560, mx: 'auto' }} role="status">
-          <HourglassEmptyOutlinedIcon aria-hidden sx={{ fontSize: 48, color: '#8F95A3' }} />
+          <IconBlob icon={HourglassEmptyOutlinedIcon} />
           <Typography variant="h5" component="h2">
             {title}
           </Typography>

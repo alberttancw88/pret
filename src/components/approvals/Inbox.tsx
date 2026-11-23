@@ -402,9 +402,9 @@ export default function ApprovalsInbox({
           <Tab
             key={t}
             value={t}
-            sx={{ minHeight: 44 }}
+            sx={{ minHeight: 44, pr: counts[t] ? 5 : 2 }}
             label={
-              <Badge badgeContent={counts[t]} color="primary" max={99} sx={{ '& .MuiBadge-badge': { right: -12 } }}>
+              <Badge badgeContent={counts[t]} color="primary" max={99} sx={{ '& .MuiBadge-badge': { right: -18, top: '50%' } }}>
                 <span>{INBOX_TAB_LABELS[t]}</span>
               </Badge>
             }

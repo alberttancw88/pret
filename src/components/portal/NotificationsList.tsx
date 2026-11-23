@@ -40,8 +40,9 @@ function Dot({ unread }: { unread: boolean }) {
         width: 10,
         height: 10,
         borderRadius: '50%',
-        bgcolor: unread ? '#5A5FF2' : 'transparent',
-        border: unread ? 'none' : '1px solid #8F95A3',
+        bgcolor: unread ? 'primary.main' : 'transparent',
+        border: unread ? 'none' : '1px solid',
+        borderColor: 'grey.500',
       }}
     />
   );

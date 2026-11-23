@@ -286,7 +286,7 @@ export function BulkDecisionDialog({
                 <TableRow key={r.taskId}>
                   <TableCell className="pret-tnum">{r.reference}</TableCell>
                   <TableCell>{r.employeeName}</TableCell>
-                  <TableCell sx={{ color: r.outcome === 'skipped' || r.outcome === 'rejected' ? '#B42318' : r.outcome === 'approved' ? '#198754' : undefined, whiteSpace: 'nowrap' }}>
+                  <TableCell sx={{ color: r.outcome === 'skipped' || r.outcome === 'rejected' ? 'error.main' : r.outcome === 'approved' ? 'success.main' : undefined, whiteSpace: 'nowrap' }}>
                     {OUTCOME_TEXT[r.outcome]}
                   </TableCell>
                   <TableCell>{r.note ?? '—'}</TableCell>

@@ -5,11 +5,14 @@
 // (first column = drill-in link, status chips, money right-aligned, 👁 + ⋮ actions)
 // → bulk bar + pagination ("Rows per page" · "1–25 of N").
 // Phone (< 600 px): filters collapse to "Filters (n)" bottom sheet, rows become cards.
+// Sunrise (theme-tokens.md §9–§10): white filter and table cards (radius 20), lavender-white
+// header, 60 px rows (48 compact) with a Comfortable | Compact toggle on desktop.
 //
 // Data is server-paginated: the page owns rows/total/page/sort and passes callbacks
 // (use `useListParams` to keep that state in the URL so Back returns to the same view).
 import * as React from 'react';
 import NextLink from 'next/link';
+import { usePathname } from 'next/navigation';
 import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -44,6 +47,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import EmptyState from '../EmptyState';
 import ErrorState from '../ErrorState';
 import { CardListSkeleton, TableSkeleton } from '../Skeletons';
+import { CompactFields, DensityToggle, useDensity } from './density';
 
 export type ListColumn<R> = {
   key: string;
@@ -113,6 +117,7 @@ export type ListPageProps<R> = {
 };
 
 const ROWS_PER_PAGE = [10, 25, 50, 100];
+const PORTAL_PREFIXES = ['/my', '/team', '/directory', '/notifications', '/home', '/account', '/org-chart'];
 
 function cellValue<R>(col: ListColumn<R>, row: R): React.ReactNode {
   if (col.render) return col.render(row);
@@ -160,6 +165,11 @@ export default function ListPage<R>(props: ListPageProps<R>) {
   const [overflow, setOverflow] = React.useState<HTMLElement | null>(null);
   const [exporting, setExporting] = React.useState(false);
   const [rowMenu, setRowMenu] = React.useState<{ anchor: HTMLElement; actions: RowAction[] } | null>(null);
+  const [density, setDensity] = useDensity();
+  // Density is an admin-list control (§10); self-service lists stay comfortable.
+  const pathname = usePathname() ?? '';
+  const portalList = PORTAL_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const compact = density === 'compact' && !phone && !portalList;
 
   const refOf = (row: R) => getRowRef?.(row) ?? String(columns[0]?.value?.(row) ?? getRowId(row));
   const bulk = selectable && !phone;
@@ -224,13 +234,15 @@ export default function ListPage<R>(props: ListPageProps<R>) {
 
   // ---- Filter card / sheet ---------------------------------------------------
   const filterGrid = (
-    <Grid container spacing={2}>
-      {filters.map((f, i) => (
-        <Grid key={i} size={{ xs: 12, sm: 6, md: 4 }}>
-          {f}
-        </Grid>
-      ))}
-    </Grid>
+    <CompactFields enabled={compact}>
+      <Grid container spacing={compact ? 1.5 : 2}>
+        {filters.map((f, i) => (
+          <Grid key={i} size={{ xs: 12, sm: 6, md: 4 }}>
+            {f}
+          </Grid>
+        ))}
+      </Grid>
+    </CompactFields>
   );
 
   // Phone pass (W2-006): the action row shows even when a list has no filters, and the
@@ -291,10 +303,13 @@ export default function ListPage<R>(props: ListPageProps<R>) {
           anchor="bottom"
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}
-          slotProps={{ paper: { sx: { borderTopLeftRadius: 16, borderTopRightRadius: 16, maxHeight: '90dvh', borderRight: 0 } } }}
+          slotProps={{ paper: { sx: { borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '90dvh', borderRight: 0, boxShadow: 8 } } }}
         >
           <Box component="form" onSubmit={submit} role="dialog" aria-label="Filters">
-            <Typography variant="h4" component="h2" sx={{ px: 2, pt: 2, pb: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1 }} aria-hidden>
+              <Box sx={{ width: 32, height: 4, borderRadius: 2, bgcolor: 'grey.300' }} />
+            </Box>
+            <Typography variant="h4" component="h2" sx={{ px: 2, pt: 1.5, pb: 1 }}>
               Filters
             </Typography>
             <Box sx={{ px: 2, pb: 2, overflowY: 'auto' }}>{filterGrid}</Box>
@@ -310,7 +325,7 @@ export default function ListPage<R>(props: ListPageProps<R>) {
                 bgcolor: 'background.paper',
                 borderTop: '1px solid',
                 borderColor: 'divider',
-                '& > *': { flex: 1 },
+                '& > *': { flex: 1, minHeight: 48 },
               }}
             >
               {clearBtn}
@@ -323,11 +338,16 @@ export default function ListPage<R>(props: ListPageProps<R>) {
   ) : (
     <Box component="form" onSubmit={submit} noValidate>
       {filters.length > 0 && (
-        <Card sx={{ p: 2 }}>
+        <Card sx={{ p: compact ? 2 : { sm: 2, md: 2.5 } }}>
           {filterGrid}
         </Card>
       )}
-      <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap" useFlexGap sx={{ mt: 2 }}>
+      <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center" flexWrap="wrap" useFlexGap sx={{ mt: 2 }}>
+        {bodyOverride === undefined && !portalList && (
+          <Box sx={{ mr: 'auto' }}>
+            <DensityToggle value={density} onChange={setDensity} />
+          </Box>
+        )}
         {exportBtn}
         {extraActions}
         {addBtn}
@@ -402,10 +422,11 @@ export default function ListPage<R>(props: ListPageProps<R>) {
         const href = getRowHref?.(row);
         const hasMenu = (rowActions?.(row) ?? []).length > 0;
         return (
-          <Card component="li" key={getRowId(row)} sx={{ position: 'relative', minHeight: 88 }}>
+          <Card component="li" variant="portal" key={getRowId(row)} sx={{ position: 'relative', minHeight: 88 }}>
             <Box sx={{ p: 2, pr: hasMenu ? 7 : 2 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
-                <Typography variant="h6" component="p" sx={{ minWidth: 0 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1} flexWrap="wrap" useFlexGap>
+                {/* References never break mid-number (Plus Jakarta Sans runs wide); chips wrap below. */}
+                <Typography variant="subtitle1" component="p" sx={{ minWidth: 0, fontWeight: 700, whiteSpace: 'nowrap' }}>
                   {href ? (
                     <Link
                       component={NextLink}
@@ -454,7 +475,7 @@ export default function ListPage<R>(props: ListPageProps<R>) {
 
   const table = (
     <TableContainer>
-      <Table aria-label={itemName.plural} sx={{ minWidth: 600 }}>
+      <Table aria-label={itemName.plural} size={compact ? 'small' : 'medium'} sx={{ minWidth: 600 }}>
         <TableHead>
           <TableRow>
             {bulk && (
@@ -510,7 +531,7 @@ export default function ListPage<R>(props: ListPageProps<R>) {
             const id = getRowId(row);
             const isSel = selected.includes(id);
             return (
-              <TableRow key={id} hover selected={isSel}>
+              <TableRow key={id} hover selected={isSel} sx={{ height: compact ? 48 : 60 }}>
                 {bulk && (
                   <TableCell padding="checkbox">
                     <Checkbox
@@ -536,7 +557,7 @@ export default function ListPage<R>(props: ListPageProps<R>) {
                     </TableCell>
                   );
                 })}
-                {(getRowHref || rowActions) && <TableCell align="right" sx={{ py: 0.5 }}>{actionCell(row)}</TableCell>}
+                {(getRowHref || rowActions) && <TableCell align="right" sx={{ py: 0.25 }}>{actionCell(row)}</TableCell>}
               </TableRow>
             );
           })}
@@ -579,7 +600,7 @@ export default function ListPage<R>(props: ListPageProps<R>) {
           {rows.length > 0 && !error && loading !== 'initial' && pagination}
         </Box>
       ) : (
-        <Card sx={{ position: 'relative' }} aria-busy={loading ? 'true' : undefined}>
+        <Card sx={{ position: 'relative', overflow: 'hidden' }} aria-busy={loading ? 'true' : undefined}>
           {loading === 'refresh' && (
             <LinearProgress aria-label="Loading" sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2 }} />
           )}
@@ -589,7 +610,7 @@ export default function ListPage<R>(props: ListPageProps<R>) {
               direction="row"
               spacing={1}
               alignItems="center"
-              sx={{ px: 2, py: 1, bgcolor: '#EDEDFE', color: '#3A3FBF', borderTop: '1px solid', borderColor: 'divider' }}
+              sx={{ px: 2, py: 1, bgcolor: 'tone.violet.bg', color: 'tone.violet.fg', borderTop: '1px solid', borderColor: 'divider' }}
             >
               <Typography variant="body2" fontWeight={600} aria-live="polite">
                 {selected.length} selected:
@@ -609,7 +630,7 @@ export default function ListPage<R>(props: ListPageProps<R>) {
               setRowMenu(null);
               a.onClick();
             }}
-            sx={a.danger ? { color: '#B42318' } : undefined}
+            sx={a.danger ? { color: 'error.main' } : undefined}
           >
             {a.label}
           </MenuItem>

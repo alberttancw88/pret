@@ -67,7 +67,7 @@ const BATCH_TONE: Record<string, ToneName> = {
   Draft: 'grey',
   'Pending approval': 'warning',
   Approved: 'info',
-  Exported: 'purple',
+  Exported: 'pink',
   Disbursed: 'success',
   Cancelled: 'grey',
 };
@@ -100,7 +100,7 @@ export default function AdminDashboard({ data, placeholder }: { data: AdminDashb
 
       <DashboardSection title="HR">
         <Box sx={GRID_SX}>
-          <KpiTile label="Active headcount" value={hr.headcount} tone="indigo" href="/employees" />
+          <KpiTile label="Active headcount" value={hr.headcount} tone="violet" href="/employees" />
           <KpiTile label="On leave today" value={hr.onLeaveToday} tone="info" href="/leave/applications?when=today" />
           <KpiTile
             label="Pending leave approvals"
@@ -125,7 +125,7 @@ export default function AdminDashboard({ data, placeholder }: { data: AdminDashb
         </Box>
 
         {data.alerts.length > 0 && (
-          <Card sx={{ mt: 2, bgcolor: '#FFF1DB', borderColor: '#B45309' }}>
+          <Card sx={{ mt: 2, bgcolor: 'tone.warning.bg', borderColor: 'warning.main' }}>
             <Box component="ul" aria-label="Alerts" sx={{ listStyle: 'none', m: 0, p: 1 }}>
               {data.alerts.slice(0, 4).map((a) => (
                 <li key={a.message}>
@@ -138,13 +138,13 @@ export default function AdminDashboard({ data, placeholder }: { data: AdminDashb
                       gap: 1.5,
                       minHeight: 44,
                       px: 1,
-                      color: '#7A4100',
+                      color: 'warning.dark',
                       textDecoration: 'none',
                       borderRadius: 1,
                       '&:hover': { textDecoration: 'underline' },
                     }}
                   >
-                    <WarningAmberIcon aria-hidden sx={{ color: '#B45309', fontSize: 20 }} />
+                    <WarningAmberIcon aria-hidden sx={{ color: 'warning.main', fontSize: 20 }} />
                     <Typography variant="body2" sx={{ flex: 1 }}>
                       {a.message}
                     </Typography>

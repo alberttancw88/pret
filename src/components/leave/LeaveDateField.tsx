@@ -72,14 +72,14 @@ export default function LeaveDateField({
         <PickerDay
           {...p}
           sx={{
-            ...(grey && !p.selected ? { color: 'text.disabled', bgcolor: '#F2F3F5' } : {}),
+            ...(grey && !p.selected ? { color: 'text.secondary', bgcolor: 'grey.50' } : {}),
             ...(m?.hasLeave && !p.selected ? { textDecoration: 'underline', textDecorationThickness: 2 } : {}),
             position: 'relative',
           }}
         >
           {(p.day as Dayjs).date()}
           {ph && (
-            <Box component="span" aria-hidden sx={{ position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)', width: 5, height: 5, borderRadius: '50%', bgcolor: p.selected ? '#fff' : '#C2410C' }} />
+            <Box component="span" aria-hidden sx={{ position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)', width: 6, height: 6, borderRadius: '50%', bgcolor: p.selected ? 'common.white' : 'warning.main' }} />
           )}
         </PickerDay>
       );
@@ -117,7 +117,7 @@ export default function LeaveDateField({
           fullWidth: true,
           error: Boolean(error),
           helperText: error ?? helper ?? (readOnly ? readOnlyReason : undefined),
-          sx: readOnly ? { '& .MuiInputBase-root': { bgcolor: '#F7F7F9' } } : undefined,
+          sx: readOnly ? { '& .MuiInputBase-root': { bgcolor: 'grey.50' } } : undefined,
         },
         openPickerButton: { 'aria-label': `Choose ${label.toLowerCase()}` },
       }}

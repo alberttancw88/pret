@@ -25,11 +25,11 @@ export default function PasswordPolicy({ password, id }: { password: string; id?
         return (
           <Box component="li" key={r.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.25 }}>
             {ok ? (
-              <CheckCircleIcon aria-hidden sx={{ fontSize: 16, color: '#198754' }} />
+              <CheckCircleIcon aria-hidden sx={{ fontSize: 16, color: 'success.main' }} />
             ) : (
-              <RadioButtonUncheckedIcon aria-hidden sx={{ fontSize: 16, color: '#8F95A3' }} />
+              <RadioButtonUncheckedIcon aria-hidden sx={{ fontSize: 16, color: 'grey.500' }} />
             )}
-            <Typography variant="body2" sx={{ color: ok ? '#0F6B40' : 'text.secondary' }}>
+            <Typography variant="body2" sx={{ color: ok ? 'success.dark' : 'text.secondary' }}>
               {r.label}
               <Box component="span" sx={visuallyHidden}>
                 {ok ? ' — met' : ' — not met'}

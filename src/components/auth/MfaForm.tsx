@@ -15,6 +15,7 @@ import Typography from '@mui/material/Typography';
 import { enrollMfa, signOut, verifyMfa } from '@/server/actions/auth';
 import ErrorState from '../ErrorState';
 import { continueUrl, fieldError } from './types';
+import { surface } from '@/theme/palette';
 
 type Enrolment = { factorId?: string; qrCode?: string; secret?: string };
 
@@ -112,7 +113,7 @@ export default function MfaForm({ mode, next }: { mode: 'enrol' | 'verify'; next
                   alt="QR code for your authenticator app"
                   width={184}
                   height={184}
-                  style={{ border: '1px solid #E4E6EC', borderRadius: 8, padding: 8, background: '#FFFFFF' }}
+                  style={{ border: `1px solid ${surface.border}`, borderRadius: 14, padding: 8, background: surface.paper }}
                 />
                 {enrolment.secret && (
                   <Box sx={{ textAlign: 'center' }}>

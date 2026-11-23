@@ -73,6 +73,7 @@ import { ApprovalTrail, CopyRef } from './LeaveApplicationView';
 import { LeaveEmployeePicker, type PickedPerson } from './pickers';
 import { MyLeaveTabs } from './MyLeave';
 import { CREDIT_FILTERS, MY_CREDIT_FILTERS } from './filters';
+import { stickyBarSx } from '../forms/stickyBar';
 
 const EXPIRING: Option[] = [
   { value: '30', label: '30 days' },
@@ -473,7 +474,7 @@ function BatchCreditDialog({ open, onClose }: { open: boolean; onClose: () => vo
               </TableHead>
               <TableBody>
                 {preview.rows.map((x) => (
-                  <TableRow key={x.employee.id} sx={x.eligible ? undefined : { bgcolor: '#FDECEC' }}>
+                  <TableRow key={x.employee.id} sx={x.eligible ? undefined : { bgcolor: 'tone.error.bg' }}>
                     <TableCell>{x.employee.name}</TableCell>
                     <TableCell>{x.label}</TableCell>
                     <TableCell>{x.eligible ? '—' : x.note ?? 'Working day — excluded'}</TableCell>
@@ -614,17 +615,7 @@ export function CreditView({ c, mode, backHref }: { c: CreditDetail; mode: 'own'
       </Grid>
       {(canDecide || (mode === 'own' && c.can.withdraw) || backHref) && (
         <Box
-          sx={{
-            position: { xs: 'sticky', sm: 'static' },
-            bottom: 'var(--pret-bottom-bar, 0px)',
-            zIndex: 2,
-            bgcolor: { xs: 'background.paper', sm: 'transparent' },
-            borderTop: { xs: '1px solid', sm: 0 },
-            borderColor: 'divider',
-            mx: { xs: -2, sm: 0 },
-            px: { xs: 2, sm: 0 },
-            py: { xs: 1.5, sm: 0 },
-          }}
+          sx={stickyBarSx}
         >
           <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap" useFlexGap>
             {backHref && (

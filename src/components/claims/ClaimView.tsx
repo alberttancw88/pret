@@ -38,6 +38,7 @@ import { PanelRow } from '../leave/common';
 import { ClaimFlags, ClaimStatusChip, LimitChip, MoneyCell, ReceiptButtons, ReceiptViewer, UtilisationPanel, utilisationColumns, type ViewerFile } from './common';
 import OwnClaimDialogs, { type OwnClaimTarget } from './OwnClaimDialogs';
 import { AttachmentBundleDialog } from './AdminDialogs';
+import { stickyBarSx } from '../forms/stickyBar';
 
 const card = { p: { xs: 2, sm: 3 } } as const;
 
@@ -166,11 +167,11 @@ export default function ClaimView({ claim: c, mode, backHref }: { claim: ClaimDe
         <Stack spacing={0.25}>
           <LimitChip check={l.limitCheck} compact />
           {l.duplicateWarnings.map((w) => (
-            <Typography key={w} variant="body2" sx={{ color: '#B45309' }}>
+            <Typography key={w} variant="body2" sx={{ color: 'warning.main' }}>
               ⚠ {w}
             </Typography>
           ))}
-          {l.lateOverride && <Typography variant="body2" sx={{ color: '#B45309' }}>Late (override)</Typography>}
+          {l.lateOverride && <Typography variant="body2" sx={{ color: 'warning.main' }}>Late (override)</Typography>}
         </Stack>
       ),
     },
@@ -361,17 +362,7 @@ export default function ClaimView({ claim: c, mode, backHref }: { claim: ClaimDe
 
       {hasActions && (
         <Box
-          sx={{
-            position: { xs: 'sticky', sm: 'static' },
-            bottom: 'var(--pret-bottom-bar, 0px)',
-            zIndex: 2,
-            bgcolor: { xs: 'background.paper', sm: 'transparent' },
-            borderTop: { xs: '1px solid', sm: 0 },
-            borderColor: 'divider',
-            mx: { xs: -2, sm: 0 },
-            px: { xs: 2, sm: 0 },
-            py: { xs: 1.5, sm: 0 },
-          }}
+          sx={stickyBarSx}
         >
           <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap" useFlexGap>
             {backHref && (

@@ -90,7 +90,7 @@ export default function BalancesList({ data, params, options, scope }: { data: B
             return (
               <React.Fragment key={g.department.id || 'all'}>
                 {data.groups.length > 0 && (
-                  <TableRow sx={{ bgcolor: '#F7F7F9' }}>
+                  <TableRow sx={{ bgcolor: 'grey.50' }}>
                     <TableCell colSpan={2 + data.types.length * 4}>
                       <Stack direction="row" spacing={1} alignItems="center">
                         <IconButton

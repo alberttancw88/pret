@@ -21,7 +21,7 @@ import {
   type LeaveTypeRef,
 } from '@/server/contracts/leave';
 import { TASK_STATUS_LABELS, type TaskStatus } from '@/server/contracts/approvals';
-import StatusChip, { chipSx, type StatusValue } from '../StatusChip';
+import StatusChip, { chipBaseSx, chipSx, type StatusValue } from '../StatusChip';
 import { formatDate } from '@/lib/format';
 import type { Option } from '../forms/fields';
 
@@ -97,7 +97,7 @@ export function TaskStatusChip({ status }: { status: TaskStatus }) {
       size="small"
       label={TASK_STATUS_LABELS[status]}
       variant="filled"
-      sx={[chipSx(tone, status === 'open' || status === 'approved' || status === 'rejected' ? 'filled' : 'outlined'), { height: 24, borderRadius: '6px', fontWeight: 600, fontSize: '0.75rem' }]}
+      sx={[chipSx(tone, status === 'open' || status === 'approved' || status === 'rejected' ? 'filled' : 'outlined'), chipBaseSx()]}
     />
   );
 }
@@ -118,7 +118,7 @@ export function DaysCell({ value, signed }: { value: string | number | null | un
   const n = Number(value);
   const text = signed ? formatSignedDays(value) : n < 0 ? `−${formatDays(Math.abs(n))}` : formatDays(value);
   return (
-    <Box component="span" className="pret-tnum" sx={{ fontVariantNumeric: 'tabular-nums', color: n < 0 ? '#B42318' : undefined, whiteSpace: 'nowrap' }}>
+    <Box component="span" className="pret-tnum" sx={{ fontVariantNumeric: 'tabular-nums', color: n < 0 ? 'error.main' : undefined, whiteSpace: 'nowrap' }}>
       {text}
     </Box>
   );
@@ -139,7 +139,7 @@ export function PanelRow({ label, value, strong, tone }: { label: React.ReactNod
       <Typography variant="body2" color={tone === 'muted' ? 'text.secondary' : 'text.primary'} fontWeight={strong ? 700 : 400}>
         {label}
       </Typography>
-      <Typography variant="body2" className="pret-tnum" fontWeight={strong ? 700 : 500} sx={{ color: tone === 'error' ? '#B42318' : undefined, fontVariantNumeric: 'tabular-nums' }}>
+      <Typography variant="body2" className="pret-tnum" fontWeight={strong ? 700 : 500} sx={{ color: tone === 'error' ? 'error.main' : undefined, fontVariantNumeric: 'tabular-nums' }}>
         {value}
       </Typography>
     </Stack>

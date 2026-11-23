@@ -1,8 +1,9 @@
 'use client';
 
-// PRET app shell — components.md §9, wireframes.md §0.1, IA §2.
-// AppBar (top) + Drawer (left: permanent ≥ 1024 px, collapsible to a 72 px rail;
-// temporary below 1024 px) + main + BottomNavigation (phone < 600 px, employee users).
+// PRET app shell — components.md §9, wireframes.md §0.1, IA §2; Sunrise shell theme-tokens.md §8.
+// AppBar (top, canvas until scrolled) + Drawer (left: permanent ≥ 1024 px, collapsible to an
+// 80 px rail; temporary below 1024 px; pastel icon tiles) + main + floating BottomNavigation
+// (phone < 600 px, employee users).
 // `sections` arrive already filtered by role on the server (buildNav), so unauthorised
 // items are absent from the DOM. That is NOT access control — every page calls requireUser.
 import * as React from 'react';
@@ -61,6 +62,9 @@ import ContactsOutlinedIcon from '@mui/icons-material/ContactsOutlined';
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 
 import { signOut } from '@/server/actions/auth';
+import type { TileName } from '@/theme/augment';
+import { tileFor } from '@/theme/palette';
+import StatusChip, { isStatusValue } from '../StatusChip';
 import { findActive, resolveTitle, type NavBadgeKey, type NavIconKey, type NavItem, type NavSection } from './nav';
 import { PageTitleProvider, usePageTitleOverride } from './PageTitle';
 import NotificationPanel, { type ShellNotification } from './NotificationPanel';
@@ -90,8 +94,123 @@ const ICONS: Record<NavIconKey, React.ElementType> = {
   settings: SettingsOutlinedIcon,
 };
 
+/** Fixed tile hue per nav item — five hues only (theme-tokens.md §8.1, calm rule 4). */
+const NAV_TILE: Record<NavIconKey, TileName> = {
+  home: 'lavender',
+  dashboard: 'lavender',
+  approvals: 'lavender',
+  employees: 'lavender',
+  reports: 'lavender',
+  leave: 'mint',
+  users: 'mint',
+  claims: 'peach',
+  settings: 'peach',
+  payroll: 'sky',
+  pay: 'sky',
+  directory: 'sky',
+  organisation: 'rose',
+  team: 'rose',
+  privacy: 'rose',
+  imports: 'rose',
+  profile: 'rose',
+};
+
 const COLLAPSE_KEY = 'pret.nav.collapsed';
-const BORDER = '#E4E6EC';
+
+/** 32 × 32 pastel icon tile (§8.1). On the active (violet) item it turns translucent white. */
+function NavIconTile({ icon: Icon, hue, active }: { icon: React.ElementType; hue: TileName; active?: boolean }) {
+  return (
+    <Box
+      component="span"
+      aria-hidden
+      sx={(t) => ({
+        width: 32,
+        height: 32,
+        borderRadius: '11px',
+        flexShrink: 0,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        bgcolor: active ? 'rgba(255,255,255,0.20)' : t.palette.tile[hue].bg,
+        color: active ? '#FFFFFF' : t.palette.tile[hue].ink,
+      })}
+    >
+      <Icon sx={{ fontSize: 20 }} />
+    </Box>
+  );
+}
+
+/** Rounded-square initials avatar; hue fixed per person (§0 rule 10). */
+function UserAvatar({ name, seed, size = 32 }: { name: string; seed: string; size?: number }) {
+  const hue = tileFor(seed);
+  return (
+    <Avatar
+      variant="rounded"
+      sx={(t) => ({ width: size, height: size, bgcolor: t.palette.tile[hue].bg, color: t.palette.tile[hue].ink, fontSize: '0.75rem', fontWeight: 800 })}
+    >
+      <span aria-hidden>{initials(name)}</span>
+    </Avatar>
+  );
+}
+
+function RoleChip({ label }: { label: string }) {
+  return isStatusValue('role', label) ? (
+    <StatusChip set="role" value={label} />
+  ) : (
+    <Chip label={label} size="small" sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 700 }} />
+  );
+}
+
+function CountBadge({ count, label, onDark }: { count: number; label: string; onDark?: boolean }) {
+  return (
+    <Box
+      component="span"
+      aria-label={label}
+      sx={{
+        ml: 1,
+        minWidth: 20,
+        height: 20,
+        px: 0.75,
+        borderRadius: '999px',
+        bgcolor: 'error.main',
+        color: '#FFFFFF',
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        lineHeight: '20px',
+        textAlign: 'center',
+        flexShrink: 0,
+        ...(onDark && { boxShadow: '0 0 0 2px #FFFFFF' }),
+      }}
+    >
+      {countLabel(count)}
+    </Box>
+  );
+}
+
+/** True while the phone's on-screen keyboard is open (the bottom bar hides, §8.3). */
+function useKeyboardOpen(enabled: boolean) {
+  const [open, setOpen] = React.useState(false);
+  React.useEffect(() => {
+    if (!enabled || typeof window === 'undefined' || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const check = () => setOpen(window.innerHeight - vv.height > 150);
+    vv.addEventListener('resize', check);
+    return () => vv.removeEventListener('resize', check);
+  }, [enabled]);
+  return open;
+}
+
+/** The top bar turns white with a hairline once the page scrolls (§8.2). */
+function useScrolled() {
+  const [scrolled, setScrolled] = React.useState(false);
+  React.useEffect(() => {
+    const on = () => setScrolled(window.scrollY > 4);
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    return () => window.removeEventListener('scroll', on);
+  }, []);
+  return scrolled;
+}
 
 export type AppShellProps = {
   sections: NavSection[];
@@ -310,7 +429,10 @@ function ShellFrame({
   ];
   const bottomValue =
     bottomItems.find((b) => b.match.some((m) => pathname === m || pathname.startsWith(m + '/')))?.value ?? (mobileOpen ? 'more' : false);
+  const keyboardOpen = useKeyboardOpen(showBottomBar && isPhone);
   const bottomBar = showBottomBar && isPhone;
+  const scrolled = useScrolled();
+  const userSeed = user.id ?? user.displayName;
 
   return (
     <Box
@@ -318,19 +440,21 @@ function ShellFrame({
         display: 'flex',
         minHeight: '100dvh',
         bgcolor: 'background.default',
-        // Phone pass (W2-006): sticky page actions sit ABOVE the fixed bottom bar, not under it.
-        '--pret-bottom-bar': bottomBar ? 'calc(56px + env(safe-area-inset-bottom))' : '0px',
+        // Phone pass (W2-006): sticky page actions sit ABOVE the floating bottom bar, not under it.
+        // The variable is the distance from the screen bottom to the bar's top edge (§8.3).
+        '--pret-bottom-bar': bottomBar ? 'calc(64px + 12px + env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)',
       }}
     >
       <AppBar
         position="fixed"
+        className={scrolled ? 'pret-scrolled' : undefined}
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
           transition: theme.transitions.create(['width', 'margin'], { duration: theme.transitions.duration.standard }),
         }}
       >
-        <Toolbar sx={{ gap: 1, minHeight: { xs: 56, md: 64 }, px: { xs: 1, sm: 2, md: 3 } }}>
+        <Toolbar sx={{ gap: 1, minHeight: { xs: 56, md: 64 }, px: { xs: 1, sm: 2, md: 4 } }}>
           <IconButton
             edge="start"
             onClick={() => setMobileOpen(true)}
@@ -355,13 +479,15 @@ function ShellFrame({
                 {crumbs.map((c, i) => (
                   <React.Fragment key={`${c.label}-${i}`}>
                     {c.href ? (
-                      <Link component={NextLink} href={c.href} sx={{ fontWeight: 400 }}>
+                      <Link component={NextLink} href={c.href} sx={{ fontWeight: 600 }}>
                         {c.label}
                       </Link>
                     ) : (
                       c.label
                     )}
-                    {' ▸ '}
+                    <Box component="span" aria-hidden sx={{ mx: 0.75 }}>
+                      ›
+                    </Box>
                   </React.Fragment>
                 ))}
               </Typography>
@@ -380,8 +506,9 @@ function ShellFrame({
                 variant="outlined"
                 sx={{
                   display: { xs: 'none', sm: 'inline-flex' },
-                  color: '#374151',
-                  borderColor: '#8F95A3',
+                  bgcolor: 'background.paper',
+                  color: 'tone.grey.fg',
+                  borderColor: 'tone.grey.border',
                   '& .MuiChip-icon': { color: 'inherit', fontSize: 14 },
                 }}
               />
@@ -396,7 +523,7 @@ function ShellFrame({
               }}
               aria-label={bell.unread > 0 ? `Notifications, ${bell.unread} unread` : 'Notifications'}
               aria-haspopup="dialog"
-              sx={{ width: 44, height: 44 }}
+              sx={{ width: 44, height: 44, borderRadius: '50%', color: 'text.secondary' }}
             >
               <Badge badgeContent={bell.unread > 0 ? countLabel(bell.unread) : 0} color="error" invisible={bell.unread <= 0}>
                 <NotificationsNoneOutlinedIcon />
@@ -411,10 +538,9 @@ function ShellFrame({
               aria-haspopup="menu"
               aria-controls={userMenu ? 'pret-user-menu' : undefined}
               aria-expanded={Boolean(userMenu)}
+              sx={{ width: 44, height: 44 }}
             >
-              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.brand', fontSize: '0.8125rem', fontWeight: 600 }}>
-                <span aria-hidden>{initials(user.displayName)}</span>
-              </Avatar>
+              <UserAvatar name={user.displayName} seed={userSeed} />
             </IconButton>
           </Tooltip>
           <Menu
@@ -425,15 +551,15 @@ function ShellFrame({
             anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           >
-            <Box sx={{ px: 2, py: 1 }}>
-              <Typography variant="body2" fontWeight={600}>
+            <Box sx={{ px: 2, py: 1, minWidth: 200 }}>
+              <Typography variant="body2" fontWeight={700}>
                 {user.displayName}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 {user.roleLabel}
               </Typography>
             </Box>
-            <Divider />
+            <Divider sx={{ my: 0.5 }} />
             <MenuItem component={NextLink} href="/account" onClick={() => setUserMenu(null)}>
               Account settings
             </MenuItem>
@@ -474,7 +600,7 @@ function ShellFrame({
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { width: theme.pret.drawerWidth, maxWidth: '85vw', boxSizing: 'border-box', boxShadow: 8 },
+          '& .MuiDrawer-paper': { width: theme.pret.drawerWidth, maxWidth: '85vw', boxSizing: 'border-box', boxShadow: 12, borderRight: 0 },
         }}
       >
         {drawer}
@@ -509,9 +635,10 @@ function ShellFrame({
           flexGrow: 1,
           minWidth: 0,
           width: { md: `calc(100% - ${drawerWidth}px)` },
-          pt: { xs: '72px', md: '88px' },
-          px: { xs: 2, sm: 3 },
-          pb: bottomBar ? 'calc(56px + 24px + env(safe-area-inset-bottom))' : 3,
+          pt: { xs: '72px', md: '80px' },
+          px: { xs: 2, sm: 3, md: 4 },
+          // Floating bar 64 + 12 gap + 12 breathing room + safe area (§8.3).
+          pb: bottomBar ? 'calc(64px + 12px + 24px + env(safe-area-inset-bottom))' : { xs: 3, md: 4 },
         }}
       >
         <Box sx={{ maxWidth: theme.pret.contentMaxWidth, mx: 'auto' }}>
@@ -524,23 +651,24 @@ function ShellFrame({
         </Box>
       </Box>
 
-      {bottomBar && (
+      {bottomBar && !keyboardOpen && (
         <Paper
           component="nav"
           aria-label="Quick navigation"
-          square
           elevation={0}
           sx={{
             position: 'fixed',
-            left: 0,
-            right: 0,
-            bottom: 0,
+            left: 12,
+            right: 12,
+            bottom: 'calc(12px + env(safe-area-inset-bottom))',
             zIndex: theme.zIndex.appBar,
-            borderTop: `1px solid ${BORDER}`,
-            pb: 'env(safe-area-inset-bottom)',
+            borderRadius: '28px',
+            bgcolor: 'background.paper',
+            boxShadow: theme.pret.shadow.floating,
+            px: 0.5,
           }}
         >
-          <BottomNavigation showLabels value={bottomValue} sx={{ height: 56 }}>
+          <BottomNavigation showLabels value={bottomValue}>
             {bottomItems.map((b) => (
               <BottomNavigationAction
                 key={b.value}
@@ -550,13 +678,15 @@ function ShellFrame({
                 href={b.href}
                 aria-current={bottomValue === b.value ? 'page' : undefined}
                 icon={
-                  'badge' in b && b.badge ? (
-                    <Badge badgeContent={countLabel(b.badge)} color="error" aria-label={`${b.badge} items awaiting approval`}>
+                  <span className="pret-bb-pill">
+                    {'badge' in b && b.badge ? (
+                      <Badge badgeContent={countLabel(b.badge)} color="error" aria-label={`${b.badge} items awaiting approval`} sx={bbBadgeSx}>
+                        <b.icon />
+                      </Badge>
+                    ) : (
                       <b.icon />
-                    </Badge>
-                  ) : (
-                    <b.icon />
-                  )
+                    )}
+                  </span>
                 }
                 sx={bottomActionSx}
               />
@@ -564,7 +694,11 @@ function ShellFrame({
             <BottomNavigationAction
               value="more"
               label="More"
-              icon={<MoreHorizIcon />}
+              icon={
+                <span className="pret-bb-pill">
+                  <MoreHorizIcon />
+                </span>
+              }
               onClick={() => setMobileOpen(true)}
               aria-label="More — open the menu"
               sx={bottomActionSx}
@@ -576,20 +710,22 @@ function ShellFrame({
   );
 }
 
+// Selected slot: icon in a 60 × 32 violet pill, white icon (7.10 : 1); label #5B21B6 700 (§8.3).
 const bottomActionSx = {
-  position: 'relative',
-  minWidth: 64,
-  '&.Mui-selected::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: '20%',
-    right: '20%',
-    height: 3,
-    borderRadius: '0 0 3px 3px',
-    backgroundColor: '#5A5FF2',
+  '& .pret-bb-pill': {
+    width: 60,
+    height: 32,
+    borderRadius: '999px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'background-color 150ms',
   },
+  '& .pret-bb-pill .MuiSvgIcon-root': { fontSize: 22 },
+  '&.Mui-selected .pret-bb-pill': { bgcolor: 'primary.main', color: '#FFFFFF' },
 } as const;
+
+const bbBadgeSx = { '& .MuiBadge-badge': { minWidth: 18, height: 18, fontSize: 11, px: 0.5, top: -2, right: -6 } } as const;
 
 // ---------------------------------------------------------------------------
 
@@ -627,20 +763,20 @@ function DrawerContent({
   }, [activeItemId]);
 
   const badgeFor = (key?: NavBadgeKey) => (key ? badges[key] ?? 0 : 0);
-  const external = user.isExternal;
+  const seed = user.id ?? user.displayName;
 
+  // §8.1: 46 px items, radius 14; the active item is the only saturated element in the rail.
   const itemSx = (active: boolean) => ({
-    minHeight: { xs: 48, md: 44 },
-    mx: 1,
+    minHeight: { xs: 48, md: 46 },
+    mx: rail ? 1.5 : 1,
     mb: 0.25,
-    px: rail ? 0 : 1.5,
+    px: 1,
+    gap: 1.5,
     justifyContent: rail ? 'center' : 'flex-start',
     color: 'text.primary',
-    '& .MuiListItemIcon-root': { color: '#5F6673' },
     ...(active && {
       bgcolor: 'primary.main',
       color: '#FFFFFF',
-      '& .MuiListItemIcon-root': { color: '#FFFFFF' },
       '&:hover': { bgcolor: 'primary.dark' },
     }),
   });
@@ -648,8 +784,8 @@ function DrawerContent({
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Brand block */}
-      <Box sx={{ px: rail ? 1 : 2.5, pt: 2, pb: 1.5 }}>
-        <Stack direction="row" spacing={1} alignItems="center" justifyContent={rail ? 'center' : 'flex-start'}>
+      <Box sx={{ px: rail ? 1 : 2.5, pt: 2.5, pb: 1.5 }}>
+        <Stack direction="row" spacing={1} alignItems="center" justifyContent={rail ? 'center' : 'space-between'}>
           <NextLink href="/" aria-label="PRET home" style={{ display: 'inline-flex', lineHeight: 0 }}>
             {rail ? (
               // High-res PNG mark cropped from the logo Albert supplied 16/11/2026 (SVG still welcome).
@@ -660,7 +796,7 @@ function DrawerContent({
               <img
                 src="/brand/interact-logo.png"
                 alt="Interact — Business through Technology"
-                style={{ height: 32, width: 'auto', maxWidth: 140, objectFit: 'contain' }}
+                style={{ height: 28, width: 'auto', maxWidth: 140, objectFit: 'contain' }}
               />
             )}
           </NextLink>
@@ -669,7 +805,7 @@ function DrawerContent({
               label={`v${version}`}
               size="small"
               variant="outlined"
-              sx={{ height: 20, fontSize: '0.6875rem', lineHeight: 1.455, color: '#374151', borderColor: '#8F95A3' }}
+              sx={{ height: 20, fontSize: '0.6875rem', lineHeight: '16px', fontWeight: 600, color: 'text.secondary', borderColor: 'grey.300', '& .MuiChip-label': { px: 1 } }}
             />
           )}
         </Stack>
@@ -679,103 +815,69 @@ function DrawerContent({
       <Box sx={{ px: rail ? 1 : 2.5, pb: 1.5 }}>
         {rail ? (
           <Tooltip title={`${user.displayName} · ${user.roleLabel}`} placement="right">
-            <Avatar sx={{ width: 32, height: 32, mx: 'auto', bgcolor: 'primary.brand', fontSize: '0.8125rem', fontWeight: 600 }}>
-              <span aria-hidden>{initials(user.displayName)}</span>
-            </Avatar>
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              <UserAvatar name={user.displayName} seed={seed} size={36} />
+            </Box>
           </Tooltip>
         ) : (
           <Stack direction="row" spacing={1.25} alignItems="center">
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.brand', fontSize: '0.8125rem', fontWeight: 600 }}>
-              <span aria-hidden>{initials(user.displayName)}</span>
-            </Avatar>
+            <UserAvatar name={user.displayName} seed={seed} size={36} />
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="body2" fontWeight={600} noWrap title={user.displayName}>
+              <Typography variant="subtitle2" fontWeight={700} noWrap title={user.displayName}>
                 Hi, {user.displayName}
               </Typography>
-              <Chip
-                label={user.roleLabel}
-                size="small"
-                variant={external ? 'outlined' : 'filled'}
-                sx={{
-                  height: 20,
-                  fontSize: '0.6875rem',
-                  lineHeight: 1.455,
-                  mt: 0.25,
-                  '& .MuiChip-label': { px: 1 },
-                  ...(external
-                    ? { color: '#3A3FBF', borderColor: '#5A5FF2', bgcolor: 'transparent' }
-                    : { color: '#FFFFFF', bgcolor: '#5A5FF2' }),
-                }}
-              />
+              <Box sx={{ mt: 0.25 }}>
+                <RoleChip label={user.roleLabel} />
+              </Box>
             </Box>
           </Stack>
         )}
       </Box>
 
       {onToggleRail && (
-        <Box sx={{ display: 'flex', justifyContent: rail ? 'center' : 'flex-end', px: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: rail ? 'center' : 'flex-end', px: 1.5 }}>
           <Tooltip title={rail ? 'Expand menu' : 'Collapse menu'} placement="right">
-            <IconButton size="small" onClick={onToggleRail} aria-label={rail ? 'Expand menu' : 'Collapse menu'} aria-pressed={rail}>
+            <IconButton size="small" onClick={onToggleRail} aria-label={rail ? 'Expand menu' : 'Collapse menu'} aria-pressed={rail} sx={{ color: 'text.secondary' }}>
               {rail ? <KeyboardDoubleArrowRightIcon fontSize="small" /> : <KeyboardDoubleArrowLeftIcon fontSize="small" />}
             </IconButton>
           </Tooltip>
         </Box>
       )}
-      <Divider />
 
-      <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', py: 1 }}>
+      <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', py: 0.5 }}>
         {sections.map((section) => (
           <Box key={section.id} sx={{ mb: 0.5 }}>
             {section.heading &&
               (rail ? (
-                <Divider sx={{ my: 1, mx: 1.5 }} />
+                <Divider sx={{ my: 1, mx: 2 }} />
               ) : (
-                <Typography variant="overline" component="p" color="text.secondary" sx={{ px: 2.5, pt: 1.5, pb: 0.5 }}>
+                <Typography variant="overline" component="p" color="text.secondary" sx={{ px: 2.5, pt: 1.75, pb: 0.75 }}>
                   {section.heading}
                 </Typography>
               ))}
             <List disablePadding>
               {section.items.map((item) => {
                 const Icon = ICONS[item.icon];
+                const hue = NAV_TILE[item.icon];
                 const leafActive = item.href !== undefined && item.id === activeItemId && !activeLeafId;
                 const parentActive = item.id === activeItemId && !!activeLeafId;
                 const isOpen = !!open[item.id];
                 const childBadge = (item.children ?? []).reduce((n, c) => n + badgeFor(c.badge), 0);
                 const count = item.badge ? badgeFor(item.badge) : childBadge;
 
-                const iconNode = (
-                  <ListItemIcon sx={{ minWidth: rail ? 0 : 36, justifyContent: 'center' }}>
+                const iconNode = (active: boolean) => (
+                  <ListItemIcon sx={{ justifyContent: 'center' }}>
                     {rail && count > 0 ? (
-                      <Badge variant="dot" color="error">
-                        <Icon sx={{ fontSize: 20 }} />
+                      <Badge variant="dot" color="error" overlap="rectangular">
+                        <NavIconTile icon={Icon} hue={hue} active={active} />
                       </Badge>
                     ) : (
-                      <Icon sx={{ fontSize: 20 }} />
+                      <NavIconTile icon={Icon} hue={hue} active={active} />
                     )}
                   </ListItemIcon>
                 );
-                const badgeNode =
-                  !rail && count > 0 ? (
-                    <Box
-                      component="span"
-                      aria-label={`${count} items awaiting action`}
-                      sx={{
-                        ml: 1,
-                        minWidth: 20,
-                        height: 20,
-                        px: 0.75,
-                        borderRadius: 10,
-                        bgcolor: '#D32F2F',
-                        color: '#FFFFFF',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        lineHeight: '20px',
-                        textAlign: 'center',
-                      }}
-                    >
-                      {countLabel(count)}
-                    </Box>
-                  ) : null;
+                const badgeNode = (onDark: boolean) =>
+                  !rail && count > 0 ? <CountBadge count={count} label={`${count} items awaiting action`} onDark={onDark} /> : null;
 
                 if (!item.children) {
                   const btn = (
@@ -784,13 +886,14 @@ function DrawerContent({
                       href={item.href ?? '#'}
                       aria-current={leafActive ? 'page' : undefined}
                       aria-label={rail ? item.label : undefined}
+                      className={leafActive ? 'pret-on-dark' : undefined}
                       sx={itemSx(leafActive)}
                     >
-                      {iconNode}
+                      {iconNode(leafActive)}
                       {!rail && (
-                        <ListItemText primary={item.label} slotProps={{ primary: { variant: 'subtitle2', fontWeight: leafActive ? 600 : 500, noWrap: true } }} />
+                        <ListItemText primary={item.label} slotProps={{ primary: { variant: 'subtitle2', fontWeight: leafActive ? 700 : 600, noWrap: true } }} />
                       )}
-                      {badgeNode}
+                      {badgeNode(leafActive)}
                     </ListItemButton>
                   );
                   return (
@@ -815,18 +918,22 @@ function DrawerContent({
                     aria-label={rail ? item.label : undefined}
                     sx={{
                       ...itemSx(false),
-                      ...(parentActive && { color: '#4548C9', '& .MuiListItemIcon-root': { color: '#4548C9' } }),
+                      ...(parentActive && { color: 'primary.dark' }),
                     }}
                   >
-                    {iconNode}
+                    {iconNode(false)}
                     {!rail && (
                       <>
                         <ListItemText
                           primary={item.label}
-                          slotProps={{ primary: { variant: 'subtitle2', fontWeight: parentActive ? 700 : 500, noWrap: true } }}
+                          slotProps={{ primary: { variant: 'subtitle2', fontWeight: parentActive ? 700 : 600, noWrap: true } }}
                         />
-                        {badgeNode}
-                        {isOpen ? <ExpandLessIcon fontSize="small" aria-hidden /> : <ExpandMoreIcon fontSize="small" aria-hidden />}
+                        {badgeNode(false)}
+                        {isOpen ? (
+                          <ExpandLessIcon fontSize="small" aria-hidden sx={{ color: 'text.secondary' }} />
+                        ) : (
+                          <ExpandMoreIcon fontSize="small" aria-hidden sx={{ color: 'text.secondary' }} />
+                        )}
                       </>
                     )}
                   </ListItemButton>
@@ -853,33 +960,14 @@ function DrawerContent({
                                   component={NextLink}
                                   href={leaf.href}
                                   aria-current={active ? 'page' : undefined}
-                                  sx={{ ...itemSx(active), minHeight: { xs: 48, md: 40 }, pl: 5.5 }}
+                                  className={active ? 'pret-on-dark' : undefined}
+                                  sx={{ ...itemSx(active), minHeight: { xs: 48, md: 40 }, pl: 6.5 }}
                                 >
                                   <ListItemText
                                     primary={leaf.label}
-                                    slotProps={{ primary: { variant: 'body2', fontWeight: active ? 600 : 400, noWrap: true } }}
+                                    slotProps={{ primary: { variant: 'body2', fontWeight: active ? 700 : 500, noWrap: true } }}
                                   />
-                                  {lc > 0 && (
-                                    <Box
-                                      component="span"
-                                      aria-label={`${lc} items awaiting action`}
-                                      sx={{
-                                        ml: 1,
-                                        minWidth: 20,
-                                        height: 20,
-                                        px: 0.75,
-                                        borderRadius: 10,
-                                        bgcolor: '#D32F2F',
-                                        color: '#FFFFFF',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 600,
-                                        lineHeight: '20px',
-                                        textAlign: 'center',
-                                      }}
-                                    >
-                                      {countLabel(lc)}
-                                    </Box>
-                                  )}
+                                  {lc > 0 && <CountBadge count={lc} label={`${lc} items awaiting action`} onDark={active} />}
                                 </ListItemButton>
                               </li>
                             );
@@ -921,8 +1009,8 @@ function DrawerContent({
 
       {!rail && (privacyNoticePublished || helpHref) && (
         <>
-          <Divider />
-          <Stack direction="row" spacing={1} sx={{ px: 2.5, py: 1.5 }} divider={<span aria-hidden>·</span>}>
+          <Divider sx={{ mx: 2 }} />
+          <Stack direction="row" spacing={1} sx={{ px: 2.5, py: 1.5, color: 'text.secondary' }} divider={<span aria-hidden>·</span>}>
             {privacyNoticePublished && (
               <Link component={NextLink} href="/privacy-notice" variant="caption">
                 Privacy notice

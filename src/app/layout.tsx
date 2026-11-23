@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
-import { inter } from '@/theme/fonts';
+import { jakarta } from '@/theme/fonts';
 import ThemeRegistry from '@/theme/ThemeRegistry';
 import ToastProvider from '@/components/ToastProvider';
 
@@ -20,12 +20,12 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#FFFFFF',
+  themeColor: '#F7F4FF',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en-MY" className={inter.variable}>
+    <html lang="en-MY" className={jakarta.variable}>
       <body>
         <ThemeRegistry>
           <ToastProvider>{children}</ToastProvider>

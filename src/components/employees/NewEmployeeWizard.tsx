@@ -86,6 +86,7 @@ import { PHOTO_ACCEPT, uploadEmployeeFile } from './upload';
 import { addDays, formatDate, todayMyt } from '@/lib/format';
 import type { OpeningLeaveForm } from '@/server/contracts/leave';
 import OpeningLeaveStep, { EMPTY_OPENING, openingLeavePayload, type OpeningLeaveValue } from '../leave/OpeningLeaveStep';
+import { stickyBarSx } from '../forms/stickyBar';
 
 const STEPS = ['Identity', 'Contact & emergency', 'Employment', 'Statutory & bank', 'Opening leave', 'Review & invite'];
 const STEP_PREFIX: string[][] = [['identity'], ['contact', 'emergencyContacts'], ['employment'], ['statutory', 'employerFlags', 'bank'], ['openingLeave'], ['invite']];
@@ -619,7 +620,7 @@ export default function NewEmployeeWizard({
         direction="row"
         spacing={1}
         justifyContent="flex-end"
-        sx={{ mt: 2, position: { xs: 'sticky', sm: 'static' }, bottom: 0, bgcolor: { xs: 'background.default', sm: 'transparent' }, py: { xs: 1.5, sm: 0 }, zIndex: 1 }}
+        sx={[{ mt: 2 }, stickyBarSx]}
       >
         <Button variant="outlined" color="inherit" onClick={() => (dirty ? setGuard(true) : router.push('/employees'))} disabled={saving}>
           Cancel

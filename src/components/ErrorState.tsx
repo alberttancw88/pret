@@ -17,6 +17,7 @@ import Typography from '@mui/material/Typography';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import SearchOffOutlinedIcon from '@mui/icons-material/SearchOffOutlined';
 import PageTitle from './shell/PageTitle';
+import { IconBlob } from './EmptyState';
 
 export type ErrorStateProps = {
   kind?: 'tile' | 'card' | 'banner' | 'page';
@@ -70,7 +71,7 @@ export default function ErrorState({ kind = 'card', message, reference, onRetry,
       <Box sx={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 2, sm: 3 } }}>
         {inShell && <PageTitle title="Not found or no access" />}
         <Stack spacing={1.5} alignItems="center" sx={{ textAlign: 'center', maxWidth: 480 }}>
-          <SearchOffOutlinedIcon aria-hidden sx={{ fontSize: 48, color: '#8F95A3' }} />
+          <IconBlob icon={SearchOffOutlinedIcon} />
           <Typography variant="h3" component={inShell ? 'h2' : 'h1'}>
             Not found or no access
           </Typography>
@@ -90,7 +91,7 @@ export default function ErrorState({ kind = 'card', message, reference, onRetry,
       <CardContent>
         <Stack spacing={1.5} alignItems="flex-start" role="alert">
           <Stack direction="row" spacing={1} alignItems="center">
-            <ErrorOutlineIcon aria-hidden sx={{ color: '#B42318' }} />
+            <ErrorOutlineIcon aria-hidden sx={{ color: 'error.main' }} />
             <Typography variant="h6" component="p">
               {message ?? 'Something went wrong. Your changes were not saved.'}
             </Typography>

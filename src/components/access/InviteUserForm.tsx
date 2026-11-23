@@ -33,6 +33,7 @@ import StatusChip from '../StatusChip';
 import { useToast } from '../ToastProvider';
 import AccessWindowFields from './AccessWindowFields';
 import { formatDate, todayMyt } from '@/lib/format';
+import { stickyBarSx } from '../forms/stickyBar';
 
 type Ext = { loginEmail: string; displayName: string; serviceProvider: string; accessStartDate: string; accessEndDate: string };
 type Emp = { employee: InvitableEmployee | null; displayName: string; admin: boolean; superAdmin: boolean; accessStartDate: string; sendMode: 'now' | 'schedule'; scheduledSendDate: string };
@@ -263,7 +264,7 @@ export default function InviteUserForm({
           </Card>
         )}
 
-        <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ position: { xs: 'sticky', sm: 'static' }, bottom: 0, bgcolor: { xs: 'background.paper', sm: 'transparent' }, py: { xs: 1.5, sm: 0 } }}>
+        <Stack direction="row" spacing={1} justifyContent="flex-end" sx={stickyBarSx}>
           <Button variant="outlined" color="inherit" onClick={() => (dirty ? setGuard(true) : router.push('/users'))} disabled={runner.saving}>
             Cancel
           </Button>

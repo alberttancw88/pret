@@ -179,8 +179,8 @@ function PayeeTable({ rows, showBank }: { rows: BatchPayeeRow[]; showBank: boole
                 render: (r: BatchPayeeRow) => (
                   <Stack spacing={0.25}>
                     {!r.bankComplete && r.paymentMethod === 'bank_transfer' && <Typography variant="body2" color="error">✕ incomplete</Typography>}
-                    {r.bankComplete && <Typography variant="body2" sx={{ color: '#198754' }}>✓ complete</Typography>}
-                    {r.bankChangedAfterExport && <Typography variant="body2" sx={{ color: '#B45309' }}>⚠ Bank changed after export</Typography>}
+                    {r.bankComplete && <Typography variant="body2" sx={{ color: 'success.main' }}>✓ complete</Typography>}
+                    {r.bankChangedAfterExport && <Typography variant="body2" sx={{ color: 'warning.main' }}>⚠ Bank changed after export</Typography>}
                   </Stack>
                 ),
               },

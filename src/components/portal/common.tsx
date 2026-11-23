@@ -4,17 +4,17 @@
 import * as React from 'react';
 import Chip from '@mui/material/Chip';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import type { ToneName } from '@/theme/augment';
-import { chipSx } from '../StatusChip';
+import { toToneName } from '@/theme/palette';
+import { chipBaseSx, chipSx } from '../StatusChip';
 
 /** Status chip from a contract tone (info / success / grey / error / warning). */
 export function ToneChip({ label, tone, outlined }: { label: string; tone: string; outlined?: boolean }) {
-  const t = (['info', 'success', 'grey', 'error', 'warning', 'indigo'].includes(tone) ? tone : 'grey') as ToneName;
+  const t = toToneName(tone);
   return (
     <Chip
       size="small"
       label={label}
-      sx={[chipSx(t, outlined ? 'outlined' : 'filled'), { height: 24, borderRadius: '6px', fontWeight: 600, fontSize: '0.75rem', '& .MuiChip-label': { px: 1 } }]}
+      sx={[chipSx(t, outlined ? 'outlined' : 'filled'), chipBaseSx()]}
     />
   );
 }

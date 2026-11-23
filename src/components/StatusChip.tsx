@@ -1,7 +1,8 @@
 'use client';
 
-// StatusChip — the single source of truth for status colours (components.md §3).
-// Label text is fixed by UX (interaction-notes §15); colour = palette.tone[T].
+// StatusChip — the single source of truth for status colours (components.md §3; Sunrise
+// mapping theme-tokens.md §3.5). Label text is fixed by UX (interaction-notes §15);
+// colour = palette.tone[T]. Pill, 24 px, 12/16 700, no leading dot (icons only for flags).
 import * as React from 'react';
 import Chip from '@mui/material/Chip';
 import type { Theme } from '@mui/material/styles';
@@ -49,7 +50,7 @@ export const STATUS_MAP = {
     'Over limit': s('warning', 'warning'),
     'Late (override)': o('warning', 'clock'),
     'Possible duplicate': o('warning', 'copy'),
-    'On behalf': o('indigo', 'onBehalf'),
+    'On behalf': o('violet', 'onBehalf'),
   },
   leave: {
     'Pending L1': f('warning'),
@@ -60,10 +61,10 @@ export const STATUS_MAP = {
     'Cancellation pending': f('info'),
     Cancelled: f('grey'),
     EMERGENCY: s('error', 'emergency'),
-    'On behalf': o('indigo', 'onBehalf'),
+    'On behalf': o('violet', 'onBehalf'),
     'Attachment pending': o('warning', 'attach'),
     'MC invalid': o('error'),
-    'Delegated from': o('indigo'), // label: "Delegated from {approver}"
+    'Delegated from': o('violet'), // label: "Delegated from {approver}"
   },
   credit: {
     Pending: f('warning'),
@@ -85,13 +86,13 @@ export const STATUS_MAP = {
     'Notice Period': f('warning'),
     Separated: s('grey'),
     Withdrawn: o('grey'),
-    Scheduled: o('indigo', 'event'),
+    Scheduled: o('violet', 'event'),
   },
   batch: {
     Draft: f('grey'),
     'Pending approval': f('warning'),
     Approved: f('info'),
-    Exported: f('purple'),
+    Exported: f('pink'),
     Disbursed: f('success'),
     Cancelled: o('grey'),
     'Outputs out of date': s('warning', 'warning'),
@@ -103,8 +104,8 @@ export const STATUS_MAP = {
     Approved: o('success'),
     Finalised: f('success', 'lock'),
     Cancelled: o('grey'),
-    Parallel: f('purple'),
-    Live: o('indigo'),
+    Parallel: f('pink'),
+    Live: o('violet'),
   },
   import: {
     Validated: f('info'),
@@ -142,7 +143,7 @@ export const STATUS_MAP = {
     Draft: f('grey'),
     Final: f('info'),
     Issued: f('success'),
-    'Re-issued': f('indigo'),
+    'Re-issued': f('violet'),
   },
   statutoryTable: {
     Draft: f('grey'),
@@ -156,11 +157,11 @@ export const STATUS_MAP = {
     Closed: f('grey'),
   },
   role: {
-    Employee: s('indigo'),
-    Manager: s('indigo'),
-    Admin: s('indigo'),
-    'Super Admin': s('indigo'),
-    'Admin · External': o('indigo'),
+    Employee: s('violet'),
+    Manager: s('violet'),
+    Admin: s('violet'),
+    'Super Admin': s('violet'),
+    'Admin · External': o('violet'),
   },
 } as const satisfies Record<string, Record<string, Spec>>;
 
@@ -185,11 +186,25 @@ export type StatusChipProps<S extends StatusSet> = {
 
 export function chipSx(toneName: ToneName, variant: ChipVariant) {
   return (t: Theme) => {
-    const T = t.palette.tone[toneName];
+    const T = t.palette.tone[toneName] ?? t.palette.tone.grey;
     if (variant === 'outlined') return { bgcolor: 'transparent', color: T.fg, border: `1px solid ${T.border}` };
     if (variant === 'solid') return { bgcolor: T.solid, color: T.solidFg, border: '1px solid transparent' };
     return { bgcolor: T.bg, color: T.fg, border: '1px solid transparent' };
   };
+}
+
+/** Shape shared by every status-style chip (StatusChip, ToneChip, contract-tone chips). */
+export function chipBaseSx(compact = false) {
+  return {
+    height: compact ? 20 : 24,
+    borderRadius: '999px',
+    fontSize: compact ? '0.6875rem' : '0.75rem',
+    lineHeight: compact ? '16px' : '16px',
+    fontWeight: 700,
+    maxWidth: '100%',
+    '& .MuiChip-label': { px: compact ? 1 : 1.25 },
+    '& .MuiChip-icon': { color: 'inherit', fontSize: 14, ml: 0.75, mr: -0.5 },
+  } as const;
 }
 
 export default function StatusChip<S extends StatusSet>({ set, value, label, size = 'small', className }: StatusChipProps<S>) {
@@ -208,19 +223,7 @@ export default function StatusChip<S extends StatusSet>({ set, value, label, siz
       className={className}
       label={label ?? value}
       icon={Icon ? <Icon aria-hidden /> : undefined}
-      sx={[
-        chipSx(spec.tone, spec.variant),
-        {
-          height: compact ? 20 : 24,
-          borderRadius: '6px',
-          fontSize: compact ? '0.6875rem' : '0.75rem',
-          lineHeight: compact ? 1.455 : 1.333,
-          fontWeight: 600,
-          maxWidth: '100%',
-          '& .MuiChip-label': { px: 1 },
-          '& .MuiChip-icon': { color: 'inherit', fontSize: 14, ml: 0.75, mr: -0.5 },
-        },
-      ]}
+      sx={[chipSx(spec.tone, spec.variant), chipBaseSx(compact)]}
     />
   );
 }

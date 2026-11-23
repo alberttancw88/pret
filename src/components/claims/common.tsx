@@ -93,7 +93,7 @@ export const flagsText = (flags: ClaimFlag[]) => flags.map((f) => CLAIM_FLAG_LAB
 export function LimitChip({ check, compact }: { check: LimitCheck | null | undefined; compact?: boolean }) {
   if (!check || check.status === 'no_limit') return compact ? <>—</> : null;
   const over = check.status === 'over';
-  const color = over ? (check.blocking ? '#B42318' : '#B45309') : '#198754';
+  const color = over ? (check.blocking ? 'error.main' : 'warning.main') : 'success.main';
   const text = over ? `⚠ ${check.message}${check.blocking ? ' (blocked)' : ''}` : `✓ ${check.message}`;
   return (
     <Typography component="span" variant="body2" sx={{ color, fontWeight: 600 }}>
@@ -229,8 +229,8 @@ export function ReceiptViewer({
   const isPdf = f.mimeType === 'application/pdf';
   const isHeic = f.mimeType === 'image/heic';
   return (
-    <Dialog open fullScreen onClose={onClose} aria-label={`Receipt ${i + 1} of ${files.length}`} slotProps={{ paper: { sx: { bgcolor: '#111827' } } }}>
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ px: 1, py: 0.5, color: '#fff', bgcolor: '#1F2937' }}>
+    <Dialog open fullScreen onClose={onClose} aria-label={`Receipt ${i + 1} of ${files.length}`} slotProps={{ paper: { sx: { bgcolor: 'grey.900' } } }}>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ px: 1, py: 0.5, color: '#fff', bgcolor: 'grey.800' }}>
         <IconButton aria-label="Close viewer" onClick={onClose} sx={{ color: '#fff' }}>
           <CloseIcon />
         </IconButton>
@@ -407,7 +407,7 @@ export function utilisationColumns() {
       header: 'Remaining (RM)',
       align: 'right' as const,
       render: (r: LimitUtilisationRow) => (
-        <Box component="span" sx={{ color: Number(r.remaining) <= 0 ? '#B42318' : undefined }}>
+        <Box component="span" sx={{ color: Number(r.remaining) <= 0 ? 'error.main' : undefined }}>
           <MoneyCell v={r.remaining} />
         </Box>
       ),

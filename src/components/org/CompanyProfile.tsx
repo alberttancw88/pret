@@ -228,7 +228,7 @@ export default function CompanyProfile({
             </Typography>
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
               <Box
-                sx={{ width: 160, height: 64, border: '1px solid', borderColor: 'divider', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#F7F7F9', overflow: 'hidden' }}
+                sx={{ width: 160, height: 64, border: '1px solid', borderColor: 'divider', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.50', overflow: 'hidden' }}
               >
                 {logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -548,7 +548,7 @@ export default function CompanyProfile({
                           setSigUploading(null);
                           if (!up.ok) return sigRun.setError(up.error);
                           setSigs((cur) => cur.map((r, j) => (j === i ? { ...r, signatureFileId: up.fileId } : r)));
-                          toast.info('Signature uploaded — press SAVE to keep it.');
+                          toast.info('Signature uploaded — press Save to keep it.');
                         }}
                       />
                     )}

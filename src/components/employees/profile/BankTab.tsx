@@ -192,7 +192,7 @@ function BankDetailsDialog({ open, onClose, profile, banks }: { open: boolean; o
       }}
     >
       {cur && (
-        <Box sx={{ mb: 2, p: 1.5, bgcolor: '#F7F7F9', borderRadius: 1 }}>
+        <Box sx={{ mb: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
           <Typography variant="caption" color="text.secondary">
             Current
           </Typography>

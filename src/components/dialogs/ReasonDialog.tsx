@@ -108,7 +108,7 @@ export default function ReasonDialog({
         variant="caption"
         component="p"
         aria-live="polite"
-        sx={{ textAlign: 'right', color: atLimit ? '#B42318' : 'text.secondary', mt: -2 }}
+        sx={{ textAlign: 'right', color: atLimit ? 'error.main' : 'text.secondary', mt: -2 }}
       >
         {reason.length}/{maxLength}
       </Typography>

@@ -37,7 +37,7 @@ export const P11_TYPE_LABELS: Record<HolidayType, string> = {
   company: 'Company',
   special: 'Special declared',
 };
-const TYPE_TONE: Record<HolidayType, string> = { national: 'indigo', state: 'info', replacement: 'grey', company: 'success', special: 'warning' };
+const TYPE_TONE: Record<HolidayType, string> = { national: 'violet', state: 'info', replacement: 'grey', company: 'success', special: 'warning' };
 
 export default function MyHolidays({ data, params, view }: { data: MyHolidaysPage; params: MyHolidaysParams; view: 'list' | 'calendar' }) {
   const list = useServerList({ filters: MY_HOLIDAY_FILTERS, sort: { key: 'date', direction: 'asc' }, preserve: ['year', 'view'] });

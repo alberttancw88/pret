@@ -1,6 +1,6 @@
 'use client';
 
-// Form field wrappers (components.md §2): outlined, floating label, mandatory " *",
+// Form field wrappers (components.md §2): outlined, label above the field (Sunrise, D35), mandatory " *",
 // error under the field, character counter where a max length applies, dd/mm/yyyy dates.
 // Locked fields render read-only with a lock adornment and a tooltip naming why.
 import * as React from 'react';
@@ -61,7 +61,7 @@ function lockAdornment(reason: string) {
   );
 }
 
-const lockedSx = { '& .MuiInputBase-root': { bgcolor: '#F7F7F9' } } as const;
+const lockedSx = { '& .MuiInputBase-root': { bgcolor: 'grey.50' } } as const;
 
 type BaseProps = {
   label: string;
@@ -147,7 +147,7 @@ export function TextInput({
           variant="caption"
           component="p"
           aria-live="polite"
-          sx={{ textAlign: 'right', mt: -2.5, color: value.length >= maxLength ? '#B42318' : 'text.secondary' }}
+          sx={{ textAlign: 'right', mt: -2.5, color: value.length >= maxLength ? 'error.main' : 'text.secondary' }}
         >
           {value.length}/{maxLength}
         </Typography>

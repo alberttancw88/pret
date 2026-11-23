@@ -61,7 +61,7 @@ export function BalanceCardView({ c, ledgerHref }: { c: BalanceCard; ledgerHref?
                 {c.availableLabel}
               </Typography>
             ) : (
-              <Typography component="p" className="pret-tnum" sx={{ fontSize: 22, fontWeight: 700, color: avail < 0 ? '#B42318' : 'text.primary', whiteSpace: 'nowrap' }}>
+              <Typography component="p" className="pret-tnum" sx={{ fontSize: 22, fontWeight: 700, color: avail < 0 ? 'error.main' : 'text.primary', whiteSpace: 'nowrap' }}>
                 {avail < 0 ? `−${formatDays(Math.abs(avail))}` : formatDays(c.available)}{' '}
                 <Typography component="span" variant="body2" color="text.secondary">
                   available
@@ -94,7 +94,7 @@ export function BalanceCardView({ c, ledgerHref }: { c: BalanceCard; ledgerHref?
             </Typography>
           )}
           {c.expiring.map((e) => (
-            <Typography key={`${e.kind}-${e.date}`} variant="body2" sx={{ mt: 1, color: '#B45309', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Typography key={`${e.kind}-${e.date}`} variant="body2" sx={{ mt: 1, color: 'warning.main', display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <WarningAmberIcon sx={{ fontSize: 16 }} aria-hidden />
               {formatDays(e.days)} {e.kind === 'carry_forward' ? 'carried forward' : 'replacement credit'} expires {formatDate(e.date)}
             </Typography>

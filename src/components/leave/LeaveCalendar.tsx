@@ -34,6 +34,7 @@ import { useToast } from '../ToastProvider';
 import { formatDate } from '@/lib/format';
 import { CALENDAR_FILTERS } from './filters';
 import type { LeaveFilterOptions } from '@/app/_lib/leave-options';
+import { leaveType, surface } from '@/theme/palette';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -46,7 +47,7 @@ function days(from: string, to: string): string[] {
 }
 
 function entryBg(e: CalendarEntry) {
-  const c = e.colour ?? '#5A5FF2';
+  const c = e.colour ?? leaveType[0];
   if (e.status !== 'approved') return `repeating-linear-gradient(45deg, ${c}55 0 4px, #fff 4px 8px)`;
   if (e.session === 'am') return `linear-gradient(90deg, ${c} 50%, transparent 50%)`;
   if (e.session === 'pm') return `linear-gradient(90deg, transparent 50%, ${c} 50%)`;
@@ -145,7 +146,7 @@ export default function LeaveCalendarView({
       ))}
       {canSeePending && (
         <Stack direction="row" spacing={0.5} alignItems="center">
-          <Box aria-hidden sx={{ width: 12, height: 12, borderRadius: '3px', background: 'repeating-linear-gradient(45deg, #5A5FF255 0 3px, #fff 3px 6px)', border: '1px solid #ccc' }} />
+          <Box aria-hidden sx={{ width: 12, height: 12, borderRadius: '3px', background: `repeating-linear-gradient(45deg, ${leaveType[0]}55 0 3px, #fff 3px 6px)`, border: `1px solid ${surface.handle}` }} />
           <Typography variant="caption">Pending</Typography>
         </Stack>
       )}
@@ -166,7 +167,7 @@ export default function LeaveCalendarView({
               const we = dow(dt) >= 5;
               return (
                 <Tooltip key={dt} title={h ? `${h.name}${h.half ? ' (half day)' : ''} · ${h.state}` : ''}>
-                  <Box component="th" sx={{ p: 0.5, minWidth: view === 'week' ? 80 : 30, textAlign: 'center', bgcolor: h ? '#FFF1E6' : we ? '#F7F7F9' : undefined, fontWeight: 500 }}>
+                  <Box component="th" sx={{ p: 0.5, minWidth: view === 'week' ? 80 : 30, textAlign: 'center', bgcolor: h ? 'tile.peach.bg' : we ? 'grey.50' : undefined, fontWeight: 500 }}>
                     <div>{WD[dow(dt)]!.slice(0, view === 'week' ? 3 : 2)}</div>
                     <div className="pret-tnum">
                       {Number(dt.slice(8))}
@@ -199,11 +200,11 @@ export default function LeaveCalendarView({
                 const es = byEmpDate.get(`${emp.employeeId}|${dt}`) ?? [];
                 const h = holidays.get(dt);
                 return (
-                  <Box component="td" key={dt} sx={{ p: 0.25, borderTop: '1px solid', borderColor: 'divider', bgcolor: h ? '#FFF1E6' : dow(dt) >= 5 ? '#F7F7F9' : undefined, textAlign: 'center' }}>
+                  <Box component="td" key={dt} sx={{ p: 0.25, borderTop: '1px solid', borderColor: 'divider', bgcolor: h ? 'tile.peach.bg' : dow(dt) >= 5 ? 'grey.50' : undefined, textAlign: 'center' }}>
                     {es.map((e) => {
                       const href = entryHref(e);
                       const label = `${emp.name} · ${formatDate(e.date)} · ${e.label}${e.status !== 'approved' ? ' (pending)' : ''}`;
-                      const box = <Box sx={{ height: 20, borderRadius: '3px', background: entryBg(e), border: e.colour ? undefined : '1px solid #5A5FF2' }} />;
+                      const box = <Box sx={{ height: 20, borderRadius: '3px', background: entryBg(e), border: e.colour ? undefined : `1px solid ${leaveType[0]}` }} />;
                       return (
                         <Tooltip key={`${e.session}-${e.refNo ?? ''}`} title={label}>
                           {href ? (
@@ -258,7 +259,7 @@ export default function LeaveCalendarView({
               key={dt}
               onClick={() => setSelectedDay(dt)}
               aria-label={`${formatDate(dt)}: ${es.length} on leave${h ? `, ${h.name}` : ''}`}
-              sx={{ minHeight: 48, flexDirection: 'column', borderRadius: 1, border: '1px solid', borderColor: sel ? 'primary.main' : 'divider', bgcolor: h ? '#FFF1E6' : dow(dt) >= 5 ? '#F7F7F9' : 'background.paper' }}
+              sx={{ minHeight: 48, flexDirection: 'column', borderRadius: '10px', border: '1px solid', borderColor: sel ? 'primary.main' : 'divider', bgcolor: h ? 'tile.peach.bg' : dow(dt) >= 5 ? 'grey.50' : 'background.paper' }}
             >
               <Typography variant="body2" className="pret-tnum">
                 {Number(dt.slice(8))}
@@ -266,7 +267,7 @@ export default function LeaveCalendarView({
               </Typography>
               <Stack direction="row" spacing={0.25}>
                 {es.slice(0, 3).map((e, j) => (
-                  <Box key={j} sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: e.colour ?? '#5A5FF2', opacity: e.status === 'approved' ? 1 : 0.5 }} />
+                  <Box key={j} sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: e.colour ?? 'primary.main', opacity: e.status === 'approved' ? 1 : 0.5 }} />
                 ))}
               </Stack>
             </ButtonBase>
@@ -288,7 +289,7 @@ export default function LeaveCalendarView({
                 const text = `${empName.get(e.employeeId) ?? ''} — ${e.label}${e.status !== 'approved' ? ' (pending)' : ''}`;
                 return (
                   <Typography key={`${e.employeeId}-${e.session}`} variant="body2" sx={{ minHeight: 32, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box component="span" sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: e.colour ?? '#5A5FF2', display: 'inline-block' }} />
+                    <Box component="span" sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: e.colour ?? 'primary.main', display: 'inline-block' }} />
                     {href ? (
                       <Link component={NextLink} href={href}>
                         {text}

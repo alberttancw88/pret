@@ -1,8 +1,9 @@
 'use client';
 
-// Toasts — components.md §11. Success (#0F6B40) or neutral (#1A1D28), 4 s, dismissible,
+// Toasts — components.md §11. Success (#065F46) or neutral (#1F1B3B), 4 s, dismissible,
 // one at a time (queued), optional VIEW action. Desktop bottom-left; phone bottom-centre
-// above the bottom bar. Never used for blocking errors (interaction-notes §10).
+// above the floating bottom bar (theme-tokens.md §8.3). Never used for blocking errors
+// (interaction-notes §10).
 import * as React from 'react';
 import NextLink from 'next/link';
 import Box from '@mui/material/Box';
@@ -62,7 +63,7 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
     setOpen(false);
   };
 
-  const bg = current?.kind === 'success' ? '#0F6B40' : '#1A1D28';
+  const bg = current?.kind === 'success' ? 'success.dark' : 'grey.900';
 
   return (
     <ToastContext.Provider value={api}>
@@ -75,7 +76,7 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
         slotProps={{ transition: { onExited: () => setCurrent(null) } }}
         anchorOrigin={phone ? { vertical: 'bottom', horizontal: 'center' } : { vertical: 'bottom', horizontal: 'left' }}
         sx={{
-          bottom: { xs: 'calc(56px + 12px + env(safe-area-inset-bottom)) !important', sm: '24px !important' },
+          bottom: { xs: 'calc(64px + 12px + 12px + 12px + env(safe-area-inset-bottom)) !important', sm: '24px !important' },
           left: { sm: '24px !important' },
         }}
       >
@@ -88,8 +89,8 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
             gap: 1,
             bgcolor: bg,
             color: '#FFFFFF',
-            borderRadius: 2,
-            boxShadow: 12,
+            borderRadius: '16px',
+            boxShadow: 4,
             pl: 2,
             pr: 0.5,
             py: 0.5,

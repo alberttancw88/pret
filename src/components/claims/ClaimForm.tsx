@@ -273,7 +273,7 @@ export default function ClaimForm({
     const amt = lineAmount(l, cat);
     const errs = lineErr(i);
     return (
-      <Card key={l.key} variant="outlined" sx={{ position: 'relative', borderColor: errs.length ? '#B42318' : undefined }}>
+      <Card key={l.key} variant="outlined" sx={{ position: 'relative', borderColor: errs.length ? 'error.main' : undefined }}>
         <CardActionArea onClick={() => editable && setEditing({ line: l, index: i })} disabled={!editable} sx={{ p: 1.5, pr: 7 }}>
           <Typography variant="subtitle2" component="p">
             {i + 1} {cat?.name ?? 'Category not available'}
@@ -300,7 +300,7 @@ export default function ClaimForm({
           <Stack spacing={0.25} sx={{ mt: 0.5 }}>
             {l.check?.limit && <LimitChip check={l.check.limit} />}
             {(l.check?.duplicate || l.duplicateWarnings?.[0]) && (
-              <Typography variant="body2" sx={{ color: '#B45309' }}>
+              <Typography variant="body2" sx={{ color: 'warning.main' }}>
                 ⚠ {l.check?.duplicate ?? l.duplicateWarnings?.[0]}
               </Typography>
             )}
@@ -322,7 +322,7 @@ export default function ClaimForm({
   };
 
   return (
-    <Box sx={{ pb: { xs: 22, sm: 2 } }}>
+    <Box sx={{ pb: { xs: 24, sm: 2 } }}>
       <Stack spacing={2}>
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
           <Typography variant="h5" component="p" className="pret-tnum">
@@ -420,21 +420,22 @@ export default function ClaimForm({
         )}
       </Stack>
 
-      {/* Totals + actions — sticky at the bottom on phone */}
+      {/* Totals + actions — floating pill bar at the bottom on phone (theme-tokens.md §8.6) */}
       <Card
-        sx={{
+        sx={(t) => ({
           position: { xs: 'fixed', sm: 'sticky' },
-          bottom: { xs: 'var(--pret-bottom-bar, 0px)', sm: 0 },
-          left: 0,
-          right: 0,
+          bottom: { xs: 'calc(var(--pret-bottom-bar, env(safe-area-inset-bottom)) + 12px)', sm: 0 },
+          left: { xs: 12, sm: 0 },
+          right: { xs: 12, sm: 0 },
           mt: 2,
           zIndex: 3,
-          borderRadius: { xs: 0, sm: 1 },
-          borderTop: '1px solid',
-          borderColor: 'divider',
-        }}
+          borderRadius: { xs: `${t.pret.radius.floating}px`, sm: `${t.pret.radius.card}px` },
+          border: { xs: 'none', sm: `1px solid ${t.palette.divider}` },
+          boxShadow: { xs: t.pret.shadow.floating, sm: 'none' },
+          '@media (max-width:599.95px)': { '& .MuiButton-root': { minHeight: 48 } },
+        })}
       >
-        <CardContent sx={{ py: 1.5, '&:last-child': { pb: 'calc(12px + env(safe-area-inset-bottom))' } }}>
+        <CardContent sx={{ py: 1.5, px: { xs: 2, sm: 3 }, '&:last-child': { pb: 1.5 } }}>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 3 }} alignItems={{ sm: 'center' }}>
             <Box sx={{ flex: 1, maxWidth: { sm: 360 } }}>
               <PanelRow label="Total excl. SST" value={<MoneyText amount={totals.exclSst} />} />
@@ -510,7 +511,7 @@ export default function ClaimForm({
           Duplicate line
         </MenuItem>
         <MenuItem
-          sx={{ color: '#B42318' }}
+          sx={{ color: 'error.main' }}
           onClick={() => {
             if (menu) {
               setDirty(true);

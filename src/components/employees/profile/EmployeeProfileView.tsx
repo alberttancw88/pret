@@ -222,7 +222,7 @@ export default function EmployeeProfileView({ ctx, data }: { ctx: ProfileCtx; da
             </Stack>
           </Stack>
           {profile.isOwnRecord && (
-            <Typography variant="body2" sx={{ mt: 1.5, color: '#B45309' }}>
+            <Typography variant="body2" sx={{ mt: 1.5, color: 'warning.main' }}>
               This is your own record. Legal name, MyKad, family, religion/OKU, statutory and bank details are locked — use a change request (approved by another Admin or Super Admin).
             </Typography>
           )}

@@ -67,6 +67,7 @@ import { formatDateTime } from '@/lib/format';
 import { formatDays, optionsFrom } from './common';
 import { StatutoryFloorDialog } from './AdjustOverride';
 import { LEAVE_TYPE_FILTERS } from './filters';
+import { surface } from '@/theme/palette';
 
 // ===========================================================================
 // L8
@@ -389,7 +390,7 @@ export function LeaveTypeForm({ detail, options, isSuperAdmin }: { detail: Leave
                   aria-checked={str('calendarColour').toUpperCase() === c}
                   aria-label={`Colour ${c}`}
                   onClick={() => set('calendarColour', c)}
-                  sx={{ width: 36, height: 36, borderRadius: '50%', bgcolor: c, border: str('calendarColour').toUpperCase() === c ? '3px solid #1F2433' : '2px solid #fff', boxShadow: '0 0 0 1px #D0D4DC' }}
+                  sx={{ width: 36, height: 36, borderRadius: '50%', bgcolor: c, border: str('calendarColour').toUpperCase() === c ? `3px solid ${surface.viewer}` : '2px solid #fff', boxShadow: `0 0 0 1px ${surface.handle}` }}
                 >
                   {str('calendarColour').toUpperCase() === c && <CheckIcon sx={{ color: '#fff' }} fontSize="small" />}
                 </ButtonBase>

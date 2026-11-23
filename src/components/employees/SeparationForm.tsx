@@ -33,6 +33,7 @@ import ConfirmDialog from '../dialogs/ConfirmDialog';
 import { KVGrid, MiniTable } from './ui';
 import { optionsOf } from './labels';
 import { addDays, formatDate, formatMoney, todayMyt } from '@/lib/format';
+import { stickyBarSx } from '../forms/stickyBar';
 
 export default function SeparationForm({ profile }: { profile: EmployeeProfile }) {
   const router = useRouter();
@@ -267,7 +268,7 @@ export default function SeparationForm({ profile }: { profile: EmployeeProfile }
           </Card>
         </Grid>
       </Grid>
-      <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 2, position: { xs: 'sticky', sm: 'static' }, bottom: 0, bgcolor: { xs: 'background.default', sm: 'transparent' }, py: { xs: 1.5, sm: 0 } }}>
+      <Stack direction="row" spacing={1} justifyContent="flex-end" sx={[{ mt: 2 }, stickyBarSx]}>
         <Button variant="outlined" color="inherit" onClick={() => (dirty ? setGuard(true) : router.push(back))} disabled={r.saving}>
           Cancel
         </Button>

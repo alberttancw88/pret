@@ -295,7 +295,7 @@ export default function ApplyLeaveForm({
       }
     } catch {
       // Network failure: entries kept; TRY AGAIN re-sends the same idempotency key (EC-LV-09).
-      setSubmitError('No connection — your entries are kept. Press SUBMIT to try again.');
+      setSubmitError('No connection — your entries are kept. Press Submit to try again.');
     } finally {
       setSaving(false);
       setConfirm(false);
@@ -675,13 +675,17 @@ export default function ApplyLeaveForm({
         </Grid>
         <Grid size={{ xs: 12, md: 4 }}>
           <Card
-            sx={{
+            sx={(t) => ({
               position: 'sticky',
-              bottom: { xs: 'var(--pret-bottom-bar, 0px)', sm: 0, md: 'auto' },
+              bottom: { xs: 'calc(var(--pret-bottom-bar, env(safe-area-inset-bottom)) + 12px)', sm: 0, md: 'auto' },
               top: { md: 88 },
               zIndex: 2,
-              boxShadow: { xs: '0 -4px 12px rgba(0,0,0,0.08)', md: undefined },
-            }}
+              // Phone: floating pill panel above the bottom bar (theme-tokens.md §8.6).
+              mx: { xs: -0.5, sm: 0 },
+              borderRadius: { xs: `${t.pret.radius.floating}px`, md: `${t.pret.radius.card}px` },
+              border: { xs: 'none', md: `1px solid ${t.palette.divider}` },
+              boxShadow: { xs: t.pret.shadow.floating, md: 'none' },
+            })}
           >
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>

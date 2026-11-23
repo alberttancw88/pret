@@ -66,8 +66,8 @@ export function EmployeeLink({ e, admin = true }: { e: EmployeeRef | null | unde
 
 /** Completeness % with colour band and the missing fields in a tooltip (F-EMP-24). */
 export function CompletenessBadge({ c, href }: { c: Completeness; href?: string }) {
-  const color = c.pct >= 100 ? '#198754' : c.pct >= 80 ? '#B45309' : '#B42318';
-  const bg = c.pct >= 100 ? '#E8F5EE' : c.pct >= 80 ? '#FEF3E2' : '#FDECEC';
+  const color = c.pct >= 100 ? 'success.main' : c.pct >= 80 ? 'warning.main' : 'error.main';
+  const bg = c.pct >= 100 ? 'tone.success.bg' : c.pct >= 80 ? 'tone.warning.bg' : 'tone.error.bg';
   const tip = c.missing.length ? `Missing: ${c.missing.map((m) => m.label + (m.payroll ? ' (payroll)' : '')).join(', ')}` : 'Complete';
   const badge = (
     <Box component="span" className="pret-tnum" sx={{ px: 1, py: 0.25, borderRadius: 1, fontSize: 13, fontWeight: 600, color, bgcolor: bg, whiteSpace: 'nowrap' }}>

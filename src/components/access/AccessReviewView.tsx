@@ -194,7 +194,7 @@ export default function AccessReviewView({ review, months }: { review: AccessRev
                     <TableCell>
                       <DateText value={u.lastLoginAt} mode="datetime" empty="Never" />
                     </TableCell>
-                    <TableCell align="right" className="pret-tnum" sx={{ color: (u.daysSinceLogin ?? 0) > 60 ? '#B42318' : undefined }}>
+                    <TableCell align="right" className="pret-tnum" sx={{ color: (u.daysSinceLogin ?? 0) > 60 ? 'error.main' : undefined }}>
                       {u.daysSinceLogin ?? '—'}
                     </TableCell>
                   </TableRow>

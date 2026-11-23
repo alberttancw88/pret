@@ -19,11 +19,23 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { signIn } from '@/server/actions/auth';
 import { continueUrl, fieldError } from './types';
+import { hasUnsavedWork } from '../forms/unsaved';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function LoginForm({ next, privacyNoticePublished = false }: { next?: string; privacyNoticePublished?: boolean }) {
+export default function LoginForm({
+  next,
+  privacyNoticePublished = false,
+  expired = false,
+}: {
+  next?: string;
+  privacyNoticePublished?: boolean;
+  /** G9 — arrived from "Your session has ended" (idle timeout). */
+  expired?: boolean;
+}) {
   const router = useRouter();
+  const [keptWork, setKeptWork] = React.useState(false);
+  React.useEffect(() => setKeptWork(expired && hasUnsavedWork()), [expired]);
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [show, setShow] = React.useState(false);
@@ -63,6 +75,12 @@ export default function LoginForm({ next, privacyNoticePublished = false }: { ne
       <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
         Sign in
       </Typography>
+      {expired && (
+        <Alert severity="info" sx={{ mb: 2.5 }}>
+          Your session has ended. Sign in again to continue.
+          {keptWork ? ' Your unsaved entries will be filled in again on the page you were on.' : ''}
+        </Alert>
+      )}
       <Stack spacing={2.5}>
         <TextField
           label="Work email"

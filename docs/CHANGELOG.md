@@ -9,6 +9,28 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.11] — 2026-11-23 — W2-006 Self-service portal completed
+### Added
+- P11 public holidays (`/my/holidays`, list and calendar) and P20 download my data (zip with JSON,
+  PDF summary and README; own data only, access-logged, 7-day availability, 3 a day).
+- G5 notification centre: bell with unread count on every page, panel, `/notifications` page with
+  mark read / unread and CSV.
+- G6 account settings: change password (re-authentication, 12-character rule, lockout, other
+  sessions signed out), notification preferences with mandatory emails locked, my delegations,
+  two-factor status.
+- G7 privacy notice page for all users; G8 not found / no access everywhere, with denials written
+  to the access log; G9 session expired with unsaved form input restored after sign-in.
+- Installable web app (manifest and icons; no offline caching of personal data).
+- Phone-layout pass over 41 employee/manager screens (sticky bars above the bottom bar, wrapping
+  action rows, 44 px touch targets, list actions on phone).
+- Database: 2 migrations on `pret-dev` (`app.export_jobs`, RLS forced).
+- Tests: W2-006 73/73, W2-005 116/116, W2-004 130/130, W2-003 90/90, W2-002 91/91, foundation
+  86/86, unit 107/107.
+- Decisions D33 (W2-006 defaults; leaked-password protection off under D27) and D34 (modern UI
+  direction, not tied to Interact's customer systems — W2-009).
+### Known gaps
+- Not yet exercised in a browser: signed-in portal screens, the data-file download, password change.
+
 ## [0.2.10] — 2026-11-22 — W2-005 Claims management built
 ### Added
 - Claims setup (ADM/SA): categories (receipt rule, mileage rate, extra fields, eligibility, tax

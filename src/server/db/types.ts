@@ -19,7 +19,7 @@ export type AuditAction =
   | 'create' | 'update' | 'status_change' | 'approve' | 'reject' | 'return' | 'cancel' | 'delete_draft' | 'login'
   | 'login_failed' | 'logout' | 'view_sensitive' | 'reveal' | 'download' | 'export' | 'import' | 'config_change'
   | 'payroll_calculate' | 'payroll_approve' | 'payroll_finalise' | 'payroll_reopen' | 'role_change' | 'record_open';
-export type LoginOutcome = 'success' | 'failure' | 'locked' | 'mfa_failure' | 'disabled' | 'expired';
+export type LoginOutcome = 'success' | 'failure' | 'locked' | 'mfa_failure' | 'disabled' | 'expired' | 'password_changed';
 export type JobStatus = 'running' | 'succeeded' | 'failed';
 
 interface Stamps {

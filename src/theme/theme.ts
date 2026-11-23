@@ -162,6 +162,13 @@ export const theme = createTheme({
     MuiCheckbox: {
       styleOverrides: { root: { color: '#8F95A3', [PHONE]: { padding: 10 } } },
     },
+    MuiSwitch: {
+      // Phone pass (W2-006): 44 × 44 touch area (PRD §8.4) with the same 34 × 14 track.
+      styleOverrides: {
+        root: { [PHONE]: { width: 64, height: 44, padding: 15 } },
+        switchBase: { [PHONE]: { padding: 12 } },
+      },
+    },
     MuiRadio: {
       styleOverrides: { root: { color: '#8F95A3', [PHONE]: { padding: 10 } } },
     },

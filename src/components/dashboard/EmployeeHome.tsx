@@ -78,6 +78,9 @@ export type EmployeeHomeProps = {
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+/** Phone pass (W2-006): list-row links get a 44 px tall tap area (PRD §8.4). */
+const TAP_LINK = { display: 'inline-flex', alignItems: 'center', minHeight: 44 } as const;
+
 function CardTitle({ title, href, linkLabel = 'See all' }: { title: string; href?: string; linkLabel?: string }) {
   return (
     <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
@@ -369,7 +372,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
                             sx={{ minHeight: 56, borderTop: '1px solid', borderColor: 'divider' }}
                           >
                             <Box sx={{ flex: 1, minWidth: 0 }}>
-                              <Link component={NextLink} href={p.href} variant="body2" className="pret-tnum">
+                              <Link component={NextLink} href={p.href} variant="body2" className="pret-tnum" sx={TAP_LINK}>
                                 {p.ref}
                               </Link>
                               <Typography variant="caption" color="text.secondary" component="p" noWrap>
@@ -410,7 +413,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
                         />
                         <Typography variant="body2" sx={{ flex: 1 }}>
                           {l.href ? (
-                            <Link component={NextLink} href={l.href}>
+                            <Link component={NextLink} href={l.href} sx={TAP_LINK}>
                               {l.type}
                             </Link>
                           ) : (
@@ -444,7 +447,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
 
             <Card>
               <CardContent>
-                <CardTitle title="Public holidays" href="/leave/calendar" />
+                <CardTitle title="Public holidays" href="/my/holidays" />
                 {data.holidays.length === 0 ? (
                   <Typography variant="body2" color="text.secondary">
                     {data.holidaysNote ?? 'The calendar has not been published yet.'}
@@ -517,7 +520,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
                         sx={{ minHeight: 56, borderTop: '1px solid', borderColor: 'divider' }}
                       >
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Link component={NextLink} href={c.href} variant="body2" className="pret-tnum">
+                          <Link component={NextLink} href={c.href} variant="body2" className="pret-tnum" sx={TAP_LINK}>
                             {c.ref}
                           </Link>
                           <Typography variant="caption" color="text.secondary" component="p" noWrap>

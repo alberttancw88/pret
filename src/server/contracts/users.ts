@@ -33,10 +33,10 @@ export const ROLE_LABELS: Record<'SA' | 'ADM' | 'MGR' | 'EMP', string> = {
   SA: 'Super Admin', ADM: 'Admin', MGR: 'Manager', EMP: 'Employee',
 };
 
-export const LOGIN_OUTCOMES = ['success', 'failure', 'locked', 'mfa_failure', 'disabled', 'expired'] as const;
+export const LOGIN_OUTCOMES = ['success', 'failure', 'locked', 'mfa_failure', 'disabled', 'expired', 'password_changed'] as const;
 export type LoginOutcome = (typeof LOGIN_OUTCOMES)[number];
 export const LOGIN_OUTCOME_LABELS: Record<LoginOutcome, string> = {
-  success: 'Success', failure: 'Failed', locked: 'Locked', mfa_failure: 'Two-factor failed', disabled: 'Disabled', expired: 'Expired',
+  success: 'Success', failure: 'Failed', locked: 'Locked', mfa_failure: 'Two-factor failed', disabled: 'Disabled', expired: 'Expired', password_changed: 'Password changed',
 };
 
 export const AUDIT_ACTIONS = [

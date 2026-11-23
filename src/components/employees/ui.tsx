@@ -189,7 +189,7 @@ export function SectionCard({
             <fieldset disabled={saving} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
               {children}
             </fieldset>
-            <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ mt: 2 }}>
+            <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap" useFlexGap sx={{ mt: 2 }}>
               <Button variant="outlined" color="inherit" onClick={onCancel} disabled={saving}>
                 Cancel
               </Button>

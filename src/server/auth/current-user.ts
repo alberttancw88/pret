@@ -2,6 +2,7 @@ import 'server-only';
 import { cache } from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { sql, withUserTx, type UserTxContext } from '../db';
+import { logDenied } from '../audit';
 import type { VerifiedClaims } from './claims';
 import { getVerifiedSession } from './jwt';
 import { requestMeta } from './request-context';
@@ -121,6 +122,32 @@ export async function requireUser(roles?: Role[]): Promise<CurrentUser> {
   if (privileged && !user.mfaVerified) {
     redirect((await hasEnrolledFactor()) ? '/mfa' : '/mfa?mode=enrol');
   }
-  if (roles && roles.length > 0 && !roles.some((r) => user.roles.includes(r))) notFound();
+  if (roles && roles.length > 0 && !roles.some((r) => user.roles.includes(r))) {
+    await recordDenial('route', `requires ${roles.join('/')}`, 'Denied: role');
+    notFound();
+  }
   return user;
+}
+
+/**
+ * W2-006 G8 (FR-G-02, US-ADMIN-020/021): one access-log row per denied request (React cache dedupes repeated calls in
+ * the same request — layout + page). Never throws: logging must not change what the user sees.
+ */
+const recordDenial = cache(async (entityType: string, entityRef: string, reason: string): Promise<void> => {
+  try {
+    const r = await resolveCurrentUser();
+    if (!r) return;
+    await withUserTx(r.ctx, (tx) => logDenied(tx, entityType, entityRef, reason));
+  } catch {
+    // ignore — the denial itself still happens
+  }
+});
+
+/**
+ * For pages/layouts that deny by their own rule (e.g. "My" pages for External ADM): logs the attempt once, then renders
+ * G8 "Not found or no access". `what` is a short label such as '/my' (never personal data).
+ */
+export async function denyAccess(what: string, reason = 'Denied: no access'): Promise<never> {
+  await recordDenial('route', what.slice(0, 40), reason);
+  notFound();
 }

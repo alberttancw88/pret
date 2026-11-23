@@ -473,6 +473,11 @@ end $$;
 -- ===========================================================================
 do $$ declare v_y int := extract(year from app.today_myt())::int; al uuid := (select id from app.leave_types where code = 'AL'); t text; b jsonb; b2 jsonb;
   v_w date := pg_temp.d('W'); v_sun date; res jsonb; v_cr uuid; v_app uuid; v_n numeric;
+  -- H15/H16 dates (Tue/Wed): W+22/W+23, unless that week overlaps emp1's C19 cross-year leave (28/12 – 05/01) — then W+10/W+11
+  -- (W2-006: the suite failed when run in late November, a date-drift collision, not a code change)
+  v_h date := case when pg_temp.d('W') + 23 >= make_date(extract(year from app.today_myt())::int, 12, 28)
+                    and pg_temp.d('W') + 22 <= make_date(extract(year from app.today_myt())::int + 1, 1, 5)
+                   then pg_temp.d('W') + 10 else pg_temp.d('W') + 22 end;
 begin
   b := app.leave_balance(pg_temp.emp('emp2'), al, v_y);
   t := pg_temp.as_user('adm', 'aal2', format('insert into app.leave_ledger (employee_id, leave_type_id, leave_year, entry_type, days, effective_date, reason, created_by) values (%L, %L, %s, ''adjustment'', 1.5, app.today_myt(), ''Correction per policy (test)'', app.current_app_user_id()) returning id::text',
@@ -523,7 +528,7 @@ begin
   perform pg_temp.r('H14 approved credit: +1.0 credit_earned, expiry = date worked + 90 (Q16)',
     (select remaining_days from app.replacement_credits where id = v_cr) = 1 and (select expiry_date from app.replacement_credits where id = v_cr) = v_sun + 90
     and exists (select 1 from app.leave_ledger where source_credit_id = v_cr and entry_type = 'credit_earned' and days = 1), t);
-  res := pg_temp.as_user('emp1', 'aal1', pg_temp.app(null, 'RL', v_w + 22, v_w + 22))::jsonb;
+  res := pg_temp.as_user('emp1', 'aal1', pg_temp.app(null, 'RL', v_h, v_h))::jsonb;
   v_app := (res -> 'applications' -> 0 ->> 'id')::uuid;
   t := pg_temp.decide('mgr', 'aal1', pg_temp.open_task(v_app), 'approve');
   if pg_temp.open_task(v_app) is not null then t := pg_temp.decide('ext', 'aal2', pg_temp.open_task(v_app), 'approve'); end if;
@@ -532,11 +537,11 @@ begin
     and exists (select 1 from app.replacement_credit_consumptions where credit_id = v_cr and application_id = v_app and days = 1), t);
   insert into ids values ('rl_app', v_app, null);
   -- recount when a holiday is declared on approved leave (BR-LV-27, EC-LV-02)
-  res := pg_temp.as_user('emp1', 'aal1', pg_temp.app(null, 'AL', v_w + 23, v_w + 23))::jsonb;
+  res := pg_temp.as_user('emp1', 'aal1', pg_temp.app(null, 'AL', v_h + 1, v_h + 1))::jsonb;
   v_app := (res -> 'applications' -> 0 ->> 'id')::uuid;
   t := pg_temp.decide('mgr', 'aal1', pg_temp.open_task(v_app), 'approve');
   t := pg_temp.decide('ext', 'aal2', pg_temp.open_task(v_app), 'approve');
-  with h as (insert into app.public_holidays (year, holiday_date, name, holiday_type) values (extract(year from v_w + 23)::int, v_w + 23, 'W4 Declared Day', 'special') returning id)
+  with h as (insert into app.public_holidays (year, holiday_date, name, holiday_type) values (extract(year from v_h + 1)::int, v_h + 1, 'W4 Declared Day', 'special') returning id)
   insert into app.public_holiday_states (holiday_id, state) select id, 'SGR' from h;
   select coalesce(sum(days), 0) into v_n from app.leave_ledger where source_application_id = v_app;
   perform pg_temp.r('H16 special holiday on approved leave → recounted to 0, day restored, N-06',

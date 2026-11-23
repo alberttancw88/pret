@@ -211,11 +211,16 @@ export async function signedPhotoUrls(accessToken: string, files: { bucket: stri
 export async function storeGeneratedFile(
   ctx: UserTxContext,
   accessToken: string,
-  input: { scope: string; fileName: string; mimeType: string; bytes: Buffer; dataCategory?: DataCategory | null },
+  input: {
+    scope: string; fileName: string; mimeType: string; bytes: Buffer; dataCategory?: DataCategory | null;
+    /** W2-006: the employee's OWN output (my-data export) — app.can_upload_for allows generated_output for self */
+    ownerEmployeeId?: string | null; retentionDeleteAfter?: string | null;
+  },
 ): Promise<{ fileId: string; sha256: string }> {
   const intent = await requestUpload(ctx, accessToken, {
-    subject: 'generated_output', ownerEmployeeId: null, scope: input.scope, originalName: input.fileName,
+    subject: 'generated_output', ownerEmployeeId: input.ownerEmployeeId ?? null, scope: input.scope, originalName: input.fileName,
     mimeType: input.mimeType, sizeBytes: input.bytes.length, dataCategory: input.dataCategory ?? null,
+    retentionDeleteAfter: input.retentionDeleteAfter ?? null,
   });
   const supabase = createSupabaseUserClient(accessToken);
   const { error } = await supabase.storage.from(intent.bucket).uploadToSignedUrl(intent.path, intent.token, input.bytes, { contentType: input.mimeType, upsert: false });

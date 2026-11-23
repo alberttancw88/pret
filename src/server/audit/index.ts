@@ -46,3 +46,13 @@ export async function logRecordOpen(
     employeeIds: employeeId ? [employeeId] : [],
   });
 }
+
+/**
+ * W2-006 G8 (FR-G-02, EC-PRT-03, US-ADMIN-020/021): a direct URL to a record the caller may not see (or that does not
+ * exist — same response, no leakage) is logged once, as action 'record_open' with a "Denied: …" reason (the pattern
+ * W2-003 introduced for non-reportee team URLs). Only detail-by-reference queries and role denials call this, so
+ * ordinary navigation never writes a row.
+ */
+export async function logDenied(tx: Tx, entityType: string, entityRef: string, reason = 'Denied: not found or no access'): Promise<void> {
+  await writeAccess(tx, { action: 'record_open', entityType, entityRef: entityRef.slice(0, 40), reason });
+}

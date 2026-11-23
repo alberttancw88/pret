@@ -424,7 +424,7 @@ export default function ClaimForm({
       <Card
         sx={{
           position: { xs: 'fixed', sm: 'sticky' },
-          bottom: { xs: 56, sm: 0 },
+          bottom: { xs: 'var(--pret-bottom-bar, 0px)', sm: 0 },
           left: 0,
           right: 0,
           mt: 2,

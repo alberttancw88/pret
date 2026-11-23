@@ -587,7 +587,7 @@ export default function ChangeRequestForm({
                 ))}
               </Stack>
               {atts.length < 5 && (
-                <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
                   <Button variant="outlined" startIcon={<PhotoCameraOutlinedIcon />} onClick={() => camRef.current?.click()} sx={{ minHeight: 44 }}>
                     Take photo
                   </Button>
@@ -605,7 +605,7 @@ export default function ChangeRequestForm({
           </Card>
         </>
       )}
-      <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ position: { xs: 'sticky', sm: 'static' }, bottom: { xs: 64, sm: 0 }, bgcolor: { xs: 'background.default', sm: 'transparent' }, py: { xs: 1.5, sm: 0 }, zIndex: 1 }}>
+      <Stack direction="row" spacing={1} justifyContent="flex-end" sx={{ position: { xs: 'sticky', sm: 'static' }, bottom: { xs: 'var(--pret-bottom-bar, 0px)', sm: 0 }, bgcolor: { xs: 'background.default', sm: 'transparent' }, py: { xs: 1.5, sm: 0 }, zIndex: 1 }}>
         <Button variant="outlined" color="inherit" onClick={() => (dirty ? setGuard(true) : router.push('/my/profile/change-requests'))} disabled={saving}>
           Cancel
         </Button>

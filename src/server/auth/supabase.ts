@@ -48,3 +48,13 @@ export function createSupabaseAdminClient(): SupabaseClient | null {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
 }
+
+/**
+ * W2-006 G6 change password: a throw-away client with no cookie storage, used ONLY to re-authenticate the signed-in user
+ * with their current password (the request's own session cookies are never replaced). Its session is revoked afterwards.
+ */
+export function createSupabaseStatelessClient(): SupabaseClient {
+  return createClient(env.supabaseUrl(), env.supabasePublishableKey(), {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+}

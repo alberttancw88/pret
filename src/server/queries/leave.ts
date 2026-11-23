@@ -1,5 +1,6 @@
 import 'server-only';
 import { sql, withUserTx, type Tx } from '../db';
+import { logDenied } from '../audit';
 import type { Role } from '../auth/current-user';
 import { authorize, iso, likeTerm, resolveNames, stamps } from '../lib/action-helpers';
 import { parseParams, EXPORT_LIMIT } from './org';
@@ -644,7 +645,11 @@ export async function applicationDetail(tx: Tx, refNo: string): Promise<LeaveApp
 export async function getLeaveApplication(refNo: string): Promise<LeaveApplicationDetail | null> {
   const { ctx } = await authorize(ANY);
   if (!/^LV-[0-9]{4}-[0-9]{5}(-[12])?$/.test(refNo)) return null;
-  return withUserTx(ctx, (tx) => applicationDetail(tx, refNo));
+  return withUserTx(ctx, async (tx) => {
+    const d = await applicationDetail(tx, refNo);
+    if (!d) await logDenied(tx, 'leave_application', refNo);
+    return d;
+  });
 }
 
 // ===========================================================================
@@ -859,7 +864,11 @@ export async function creditDetail(tx: Tx, creditNo: string): Promise<CreditDeta
 export async function getCredit(creditNo: string): Promise<CreditDetail | null> {
   const { ctx } = await authorize(ANY);
   if (!/^RL-[0-9]{4}-[0-9]{5}$/.test(creditNo)) return null;
-  return withUserTx(ctx, (tx) => creditDetail(tx, creditNo));
+  return withUserTx(ctx, async (tx) => {
+    const d = await creditDetail(tx, creditNo);
+    if (!d) await logDenied(tx, 'replacement_credit', creditNo);
+    return d;
+  });
 }
 
 // ===========================================================================

@@ -2,7 +2,7 @@ import 'server-only';
 import { sql, withUserTx, type Tx } from '../db';
 import { claimOpenItems, openClaimsFor, teamMemberClaims } from './claims';
 import type { CurrentUser, Role } from '../auth/current-user';
-import { logRecordOpen, writeAccess } from '../audit';
+import { logDenied, logRecordOpen, writeAccess } from '../audit';
 import { fieldCrypto } from '../crypto';
 import { signedPhotoUrls } from '../storage';
 import { authorize, hasRole, iso, likeTerm, resolveNames, stamps } from '../lib/action-helpers';
@@ -473,7 +473,7 @@ export async function getEmployeeProfile(employeeNo: string): Promise<EmployeePr
   if (!NO_RE.test(employeeNo)) return null;
   return withUserTx(ctx, async (tx) => {
     const e = await loadCore(tx, { employeeNo });
-    if (!e) return null;
+    if (!e) { await logDenied(tx, 'employee', employeeNo); return null; }
     await logRecordOpen(tx, user, 'employee', e.id, e.id);
     return buildAdminProfile(tx, user, accessToken, e);
   });
@@ -1201,6 +1201,7 @@ export async function getChangeRequest(crNo: string): Promise<ChangeRequestDetai
   if (!/^CR-\d{4}-\d{5,}$/.test(crNo)) return null;
   return withUserTx(ctx, async (tx) => {
     const d = await changeRequestDetail(tx, crNo, false, true);
+    if (!d) await logDenied(tx, 'change_request', crNo);
     if (d) {
       await logRecordOpen(tx, user, 'change_request', d.id, d.employee.id);
       // BR-ADM-21: an HR view of special-category values (religion / OKU) is always access-logged
@@ -1216,7 +1217,11 @@ export async function getChangeRequest(crNo: string): Promise<ChangeRequestDetai
 export async function getMyChangeRequest(crNo: string): Promise<ChangeRequestDetail | null> {
   const { ctx } = await authorize(ANY_USER);
   if (!/^CR-\d{4}-\d{5,}$/.test(crNo)) return null;
-  return withUserTx(ctx, (tx) => changeRequestDetail(tx, crNo, true, false));
+  return withUserTx(ctx, async (tx) => {
+    const d = await changeRequestDetail(tx, crNo, true, false);
+    if (!d) await logDenied(tx, 'change_request', crNo);
+    return d;
+  });
 }
 
 export const CR_LABEL = CR_CATEGORY_LABELS;

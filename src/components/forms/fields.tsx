@@ -24,6 +24,7 @@ import Typography from '@mui/material/Typography';
 import LockIcon from '@mui/icons-material/Lock';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
+import { useRestorableField } from './unsaved';
 
 export type Option = { value: string; label: string; secondary?: string; disabled?: boolean };
 
@@ -73,6 +74,8 @@ type BaseProps = {
   /** Span both columns inside FormGrid. */
   full?: boolean;
   name?: string;
+  /** Never kept for restore after a session timeout (identifiers, secrets) — G9. */
+  sensitive?: boolean;
 };
 
 export function TextInput({
@@ -92,6 +95,7 @@ export function TextInput({
   autoComplete,
   name,
   counter,
+  sensitive,
 }: BaseProps & {
   value: string;
   onChange: (v: string) => void;
@@ -107,8 +111,17 @@ export function TextInput({
 }) {
   const showCounter = counter ?? (multiline && !!maxLength);
   const helperNode = error ?? helper;
+  const restoreRef = useRestorableField({
+    label: name ?? label,
+    value,
+    onChange: (v) => onChange(String(v ?? '')),
+    sensitive: sensitive || autoComplete === 'off' || autoComplete === 'one-time-code',
+    type,
+    disabled,
+    locked: Boolean(locked),
+  });
   return (
-    <Box>
+    <Box ref={restoreRef}>
       <TextField
         fullWidth
         name={name}
@@ -155,6 +168,7 @@ export function SelectInput({
   disabled,
   name,
   emptyLabel,
+  sensitive,
 }: BaseProps & {
   value: string;
   onChange: (v: string) => void;
@@ -163,12 +177,25 @@ export function SelectInput({
   emptyLabel?: string;
 }) {
   const lockedLabel = options.find((o) => o.value === value)?.label ?? '';
+  const restoreRef = useRestorableField({
+    label: name ?? label,
+    value,
+    // Only values that are still offered are restored.
+    onChange: (v) => {
+      const x = String(v ?? '');
+      if (x === '' || options.some((o) => o.value === x && !o.disabled)) onChange(x);
+    },
+    sensitive,
+    disabled,
+    locked: Boolean(locked),
+  });
   if (locked) {
     return <TextInput label={label} value={lockedLabel} onChange={() => undefined} locked={locked} helper={helper} required={required} />;
   }
   return (
     <TextField
       select
+      ref={restoreRef}
       fullWidth
       name={name}
       label={label}
@@ -210,9 +237,19 @@ export function DateInput({
   disabled,
   minDate,
   maxDate,
+  sensitive,
 }: BaseProps & { value: string; onChange: (v: string) => void; minDate?: string; maxDate?: string }) {
+  const restoreRef = useRestorableField({
+    label,
+    value,
+    onChange: (v) => onChange(typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ''),
+    sensitive,
+    disabled,
+    locked: Boolean(locked),
+  });
   return (
     <DatePicker
+      ref={restoreRef}
       label={required ? `${label} *` : label}
       value={value ? dayjs(value) : null}
       format="DD/MM/YYYY"
@@ -247,6 +284,7 @@ export function NumberInput({
   max,
   step,
   suffix,
+  sensitive,
 }: BaseProps & {
   value: string;
   onChange: (v: string) => void;
@@ -255,8 +293,10 @@ export function NumberInput({
   step?: number;
   suffix?: string;
 }) {
+  const restoreRef = useRestorableField({ label, value, onChange: (v) => onChange(String(v ?? '')), sensitive, disabled, locked: Boolean(locked) });
   return (
     <TextField
+      ref={restoreRef}
       fullWidth
       type="number"
       label={label}
@@ -287,9 +327,11 @@ export function SwitchInput({
   locked,
   disabled,
   error,
+  sensitive,
 }: BaseProps & { checked: boolean; onChange: (v: boolean) => void }) {
+  const restoreRef = useRestorableField({ label, value: checked, onChange: (v) => onChange(Boolean(v)), sensitive, disabled, locked: Boolean(locked) });
   return (
-    <FormControl error={Boolean(error)} disabled={disabled}>
+    <FormControl ref={restoreRef} error={Boolean(error)} disabled={disabled}>
       <FormControlLabel
         control={
           <Switch checked={checked} onChange={(e) => !locked && onChange(e.target.checked)} disabled={disabled || Boolean(locked)} />
@@ -312,9 +354,11 @@ export function CheckboxInput({
   helper,
   disabled,
   error,
+  sensitive,
 }: BaseProps & { checked: boolean; onChange: (v: boolean) => void }) {
+  const restoreRef = useRestorableField({ label, value: checked, onChange: (v) => onChange(Boolean(v)), sensitive, disabled });
   return (
-    <FormControl error={Boolean(error)} disabled={disabled}>
+    <FormControl ref={restoreRef} error={Boolean(error)} disabled={disabled}>
       <FormControlLabel control={<Checkbox checked={checked} onChange={(e) => onChange(e.target.checked)} />} label={label} />
       {(error || helper) && <FormHelperText>{error ?? helper}</FormHelperText>}
     </FormControl>
@@ -331,10 +375,21 @@ export function RadioInput({
   helper,
   row,
   disabled,
+  sensitive,
 }: BaseProps & { value: string; onChange: (v: string) => void; options: Option[]; row?: boolean }) {
   const id = React.useId();
+  const restoreRef = useRestorableField({
+    label,
+    value,
+    onChange: (v) => {
+      const x = String(v ?? '');
+      if (options.some((o) => o.value === x && !o.disabled)) onChange(x);
+    },
+    sensitive,
+    disabled,
+  });
   return (
-    <FormControl error={Boolean(error)} disabled={disabled}>
+    <FormControl ref={restoreRef} error={Boolean(error)} disabled={disabled}>
       <FormLabel id={id} required={required}>
         {label}
       </FormLabel>
@@ -360,10 +415,20 @@ export function MultiSelectInput({
   locked,
   disabled,
   limitTags = 3,
+  sensitive,
 }: BaseProps & { value: string[]; onChange: (v: string[]) => void; options: Option[]; limitTags?: number }) {
   const selected = options.filter((o) => value.includes(o.value));
+  const restoreRef = useRestorableField({
+    label,
+    value,
+    onChange: (v) => onChange(Array.isArray(v) ? v.map(String).filter((x) => options.some((o) => o.value === x)) : []),
+    sensitive,
+    disabled,
+    locked: Boolean(locked),
+  });
   return (
     <Autocomplete
+      ref={restoreRef}
       multiple
       disableCloseOnSelect
       options={options}

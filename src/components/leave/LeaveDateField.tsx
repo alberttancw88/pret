@@ -12,6 +12,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import type { CalendarMarks } from '@/server/contracts/leave';
 import { fetchCalendarMarks } from '@/server/actions/leave';
 import { addDaysIso } from '@/server/contracts/leave';
+import { useRestorableField } from '../forms/unsaved';
 
 type Mark = CalendarMarks['days'][number];
 
@@ -93,8 +94,16 @@ export default function LeaveDateField({
     return MarkedDay;
   }, [marks]);
 
+  const restoreRef = useRestorableField({
+    label,
+    value,
+    onChange: (v) => onChange(typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ''),
+    locked: readOnly,
+  });
+
   return (
     <DatePicker
+      ref={restoreRef}
       label={required ? `${label} *` : label}
       value={value ? dayjs(value) : null}
       format="DD/MM/YYYY"

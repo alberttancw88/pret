@@ -8,10 +8,10 @@ export const metadata: Metadata = { title: 'Sign in' };
 export const dynamic = 'force-dynamic';
 
 // S-GL-01 · /login
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  const { next } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; expired?: string }> }) {
+  const { next, expired } = await searchParams;
   const n = safeNext(next) ?? undefined;
   // Already signed in: hand over to "/" which routes by role / MFA state.
   if (await getCurrentUser()) redirect(n ? `/?next=${encodeURIComponent(n)}` : '/');
-  return <LoginForm next={n} />;
+  return <LoginForm next={n} expired={expired === '1'} />;
 }

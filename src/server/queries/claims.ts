@@ -1,5 +1,6 @@
 import 'server-only';
 import { sql, withUserTx, type Tx } from '../db';
+import { logDenied } from '../audit';
 import type { Role } from '../auth/current-user';
 import { authorize, iso, likeTerm, resolveNames, stamps } from '../lib/action-helpers';
 import { parseParams, EXPORT_LIMIT } from './org';
@@ -391,7 +392,11 @@ export async function claimDetail(tx: Tx, claimNo: string): Promise<ClaimDetail 
 export async function getClaim(claimNo: string): Promise<ClaimDetail | null> {
   const { ctx } = await authorize(ANY);
   if (!CLAIM_NO_RE.test(claimNo)) return null;
-  return withUserTx(ctx, (tx) => claimDetail(tx, claimNo));
+  return withUserTx(ctx, async (tx) => {
+    const d = await claimDetail(tx, claimNo);
+    if (!d) await logDenied(tx, 'claim', claimNo);
+    return d;
+  });
 }
 
 // ===========================================================================
@@ -681,7 +686,11 @@ export async function batchDetail(tx: Tx, batchNo: string): Promise<BatchDetail 
 export async function getBatch(batchNo: string): Promise<BatchDetail | null> {
   const { ctx } = await authorize(ADMIN);
   if (!BATCH_NO_RE.test(batchNo)) return null;
-  return withUserTx(ctx, (tx) => batchDetail(tx, batchNo));
+  return withUserTx(ctx, async (tx) => {
+    const d = await batchDetail(tx, batchNo);
+    if (!d) await logDenied(tx, 'disbursement_batch', batchNo);
+    return d;
+  });
 }
 export async function paymentListReport(tx: Tx, batchNo: string): Promise<PaymentListReport | null> {
   const b = (await sql<R>`select b.*, app.user_name(b.prepared_by) as prep, app.user_name(b.approved_by) as appr from app.disbursement_batches b where b.batch_no = ${batchNo}`.execute(tx)).rows[0];

@@ -616,7 +616,7 @@ export function CreditView({ c, mode, backHref }: { c: CreditDetail; mode: 'own'
         <Box
           sx={{
             position: { xs: 'sticky', sm: 'static' },
-            bottom: 0,
+            bottom: 'var(--pret-bottom-bar, 0px)',
             zIndex: 2,
             bgcolor: { xs: 'background.paper', sm: 'transparent' },
             borderTop: { xs: '1px solid', sm: 0 },
@@ -626,7 +626,7 @@ export function CreditView({ c, mode, backHref }: { c: CreditDetail; mode: 'own'
             py: { xs: 1.5, sm: 0 },
           }}
         >
-          <Stack direction="row" spacing={1} justifyContent="flex-end">
+          <Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap" useFlexGap>
             {backHref && (
               <Button component={NextLink} href={backHref} sx={{ mr: 'auto' }}>
                 Back

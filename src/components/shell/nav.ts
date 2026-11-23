@@ -99,7 +99,7 @@ export function buildNav(user: ShellUser): NavSection[] {
         { id: 'leave-balances', label: 'My balances', href: '/my/leave/balances' },
         { id: 'leave-credits', label: 'Replacement credits', href: '/my/leave/credits' },
         { id: 'leave-calendar', label: 'Leave calendar', href: '/leave/calendar' },
-        // P11 Public holidays (/my/holidays) arrives with W2-006 — hidden until the page exists.
+        { id: 'leave-holidays', label: 'Public holidays', href: '/my/holidays' },
       ],
     });
     my.push({
@@ -333,10 +333,18 @@ export function findActive(sections: NavSection[], pathname: string): { item?: N
   return { item: best.item, leaf: best.leaf };
 }
 
+/** Global screens reached from the top bar / user menu, not the left nav (G5, G6, G7). */
+const GLOBAL_TITLES: Record<string, string> = {
+  '/notifications': 'Notifications',
+  '/account': 'Account settings',
+  '/privacy-notice': 'Privacy notice',
+};
+
 /** Default page title from the nav (pages may override via <PageTitle>). */
 export function resolveTitle(sections: NavSection[], pathname: string): { title: string; parent?: string } {
   const { item, leaf } = findActive(sections, pathname);
   if (leaf && item) return { title: leaf.label, parent: item.label };
   if (item) return { title: item.label };
+  if (GLOBAL_TITLES[pathname]) return { title: GLOBAL_TITLES[pathname] };
   return { title: 'PRET' };
 }

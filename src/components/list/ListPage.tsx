@@ -233,15 +233,19 @@ export default function ListPage<R>(props: ListPageProps<R>) {
     </Grid>
   );
 
+  // Phone pass (W2-006): the action row shows even when a list has no filters, and the
+  // list's extra actions (MARK ALL READ, NEW OVERRIDE, …) are no longer dropped on phones.
   const filterArea = phone ? (
-    filters.length > 0 && (
+    (filters.length > 0 || onExport || addNew || extraActions) && (
       <>
         <Stack direction="row" spacing={1} alignItems="center">
-          <Badge badgeContent={activeFilterCount} color="primary" invisible={activeFilterCount === 0}>
-            <Button variant="outlined" color="inherit" startIcon={<FilterListIcon />} onClick={() => setSheetOpen(true)}>
-              Filters{activeFilterCount ? ` (${activeFilterCount})` : ''}
-            </Button>
-          </Badge>
+          {filters.length > 0 && (
+            <Badge badgeContent={activeFilterCount} color="primary" invisible={activeFilterCount === 0}>
+              <Button variant="outlined" color="inherit" startIcon={<FilterListIcon />} onClick={() => setSheetOpen(true)}>
+                Filters{activeFilterCount ? ` (${activeFilterCount})` : ''}
+              </Button>
+            </Badge>
+          )}
           <Box sx={{ flex: 1 }} />
           {(onExport || addNew) && (
             <>
@@ -278,6 +282,11 @@ export default function ListPage<R>(props: ListPageProps<R>) {
             </>
           )}
         </Stack>
+        {extraActions && (
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ '& > *': { flex: '1 1 auto' } }}>
+            {extraActions}
+          </Stack>
+        )}
         <Drawer
           anchor="bottom"
           open={sheetOpen}

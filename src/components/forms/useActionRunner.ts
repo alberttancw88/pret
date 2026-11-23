@@ -8,6 +8,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '../ToastProvider';
+import { announceSessionEnded, SESSION_ENDED_MESSAGE } from './unsaved';
 
 export type ActionFailShape = { ok: false; error: string; fieldErrors?: Record<string, string> };
 export type ActionOkShape = { ok: true };
@@ -44,6 +45,9 @@ export function useActionRunner() {
           if (msg) toast.success(msg);
           if (opts.refresh !== false) router.refresh();
         } else {
+          // G9: the server says the session is gone — the shell keeps the page's unsaved
+          // entries and shows "Your session has ended" with SIGN IN.
+          if (result.error === SESSION_ENDED_MESSAGE) announceSessionEnded();
           setError(result.error);
           setFieldErrors(result.fieldErrors ?? {});
         }

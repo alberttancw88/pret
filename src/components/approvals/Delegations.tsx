@@ -30,7 +30,7 @@ import {
   type ReassignItemType,
   type ReassignPreview,
 } from '@/server/contracts/approvals';
-import { endDelegation, exportDelegationsCsv, previewReassign, reassignPendingItems, saveDelegation } from '@/server/actions/approvals';
+import { endDelegation, exportDelegationsCsv, previewReassign, reassignPendingItems, saveDelegation, saveMyDelegation } from '@/server/actions/approvals';
 import ListPage, { type ListColumn } from '../list/ListPage';
 import { DateFilter, KeywordField, MultiSelectFilter } from '../list/FilterFields';
 import { downloadServerCsv, useServerList } from '../list/useServerList';
@@ -49,7 +49,26 @@ import { DELEGATION_FILTERS } from '../leave/filters';
 
 const STATE_CHIP: Record<string, 'Active' | 'Inactive'> = { active: 'Active', scheduled: 'Inactive', ended: 'Inactive' };
 
-export function DelegationDialog({ open, onClose, row, own }: { open: boolean; onClose: () => void; row: DelegationRow | null; own?: boolean }) {
+/**
+ * L14 (ADM/SA, on behalf of an approver) and G6 Delegation tab (`own`: the signed-in approver —
+ * saveMyDelegation, never self, From ≥ today, "Add delegate" / SAVE DELEGATE per wireframe G6).
+ */
+export function DelegationDialog({
+  open,
+  onClose,
+  row,
+  own,
+  selfUserId,
+  minFrom,
+}: {
+  open: boolean;
+  onClose: () => void;
+  row: DelegationRow | null;
+  own?: boolean;
+  selfUserId?: string;
+  /** G6: From ≥ today (yyyy-mm-dd). */
+  minFrom?: string;
+}) {
   const r = useActionRunner();
   const [approver, setApprover] = React.useState<PickedPerson | null>(null);
   const [delegate, setDelegate] = React.useState<PickedPerson | null>(null);
@@ -70,13 +89,13 @@ export function DelegationDialog({ open, onClose, row, own }: { open: boolean; o
   return (
     <FormDialog
       open={open}
-      title={row ? 'Edit delegation' : 'Add delegation'}
+      title={own ? (row ? 'Edit delegate' : 'Add delegate') : row ? 'Edit delegation' : 'Add delegation'}
       onClose={onClose}
       saving={r.saving}
       error={r.error}
       fieldErrors={r.fieldErrors}
       dirty={Boolean(delegate || from)}
-      submitLabel="Save delegation"
+      submitLabel={own ? 'Save delegate' : 'Save delegation'}
       onSubmit={async () => {
         if (!own && !approver) {
           r.setFieldErrors({ delegatorUserId: 'Choose the approver.' });
@@ -86,8 +105,9 @@ export function DelegationDialog({ open, onClose, row, own }: { open: boolean; o
           r.setFieldErrors({ delegateUserId: 'Choose the delegate.' });
           return;
         }
+        const input = { replaceId: row?.id, delegatorUserId: own ? undefined : approver?.id, delegateUserId: delegate.id, validFrom: from, validTo: to, scope: scope as DelegationScope };
         const res = await r.run(
-          () => saveDelegation({ replaceId: row?.id, delegatorUserId: own ? undefined : approver?.id, delegateUserId: delegate.id, validFrom: from, validTo: to, scope: scope as DelegationScope }),
+          () => (own ? saveMyDelegation(input) : saveDelegation(input)),
           { success: 'Delegation saved. The delegate has been notified.' },
         );
         if (res?.ok) onClose();
@@ -95,10 +115,10 @@ export function DelegationDialog({ open, onClose, row, own }: { open: boolean; o
     >
       <Stack spacing={2}>
         {!own && <ApproverPicker label="Approver" required value={approver} onChange={setApprover} error={r.fieldErrors.delegatorUserId} helper="The approver whose items are delegated." />}
-        <ApproverPicker label="Delegate" required value={delegate} onChange={setDelegate} excludeUserId={approver?.id} error={r.fieldErrors.delegateUserId} helper="Active employee user or Admin. The delegate can't approve their own items — those skip to the next level." />
+        <ApproverPicker label="Delegate" required value={delegate} onChange={setDelegate} excludeUserId={own ? selfUserId : approver?.id} error={r.fieldErrors.delegateUserId} helper="Active employee user or Admin. The delegate can't approve their own items — those skip to the next level." />
         <FormGrid>
-          <DateInput label="From" required value={from} onChange={setFrom} error={r.fieldErrors.validFrom} />
-          <DateInput label="To" required value={to} onChange={setTo} minDate={from || undefined} error={r.fieldErrors.validTo} />
+          <DateInput label="From" required value={from} onChange={setFrom} minDate={minFrom} error={r.fieldErrors.validFrom} />
+          <DateInput label="To" required value={to} onChange={setTo} minDate={from || minFrom || undefined} error={r.fieldErrors.validTo} />
           <SelectInput label="Scope" required value={scope} onChange={(v) => setScope(v as DelegationScope)} options={optionsFrom(DELEGATION_SCOPE_LABELS, DELEGATION_SCOPES)} error={r.fieldErrors.scope} />
         </FormGrid>
         <Typography variant="caption" color="text.secondary">

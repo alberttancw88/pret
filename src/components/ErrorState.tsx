@@ -16,6 +16,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import SearchOffOutlinedIcon from '@mui/icons-material/SearchOffOutlined';
+import PageTitle from './shell/PageTitle';
 
 export type ErrorStateProps = {
   kind?: 'tile' | 'card' | 'banner' | 'page';
@@ -24,9 +25,11 @@ export type ErrorStateProps = {
   reference?: string;
   onRetry?: () => void;
   homeHref?: string;
+  /** 'page' inside the app shell: the shell owns the single <h1>, so the title moves there. */
+  inShell?: boolean;
 };
 
-export default function ErrorState({ kind = 'card', message, reference, onRetry, homeHref = '/' }: ErrorStateProps) {
+export default function ErrorState({ kind = 'card', message, reference, onRetry, homeHref = '/', inShell = false }: ErrorStateProps) {
   if (kind === 'tile') {
     return (
       <Alert
@@ -64,10 +67,11 @@ export default function ErrorState({ kind = 'card', message, reference, onRetry,
 
   if (kind === 'page') {
     return (
-      <Box sx={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}>
+      <Box sx={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 2, sm: 3 } }}>
+        {inShell && <PageTitle title="Not found or no access" />}
         <Stack spacing={1.5} alignItems="center" sx={{ textAlign: 'center', maxWidth: 480 }}>
           <SearchOffOutlinedIcon aria-hidden sx={{ fontSize: 48, color: '#8F95A3' }} />
-          <Typography variant="h3" component="h1">
+          <Typography variant="h3" component={inShell ? 'h2' : 'h1'}>
             Not found or no access
           </Typography>
           <Typography variant="body1" color="text.secondary">

@@ -7,7 +7,10 @@
 // - 2 minutes before: non-dismissible warning with a live countdown
 //   (announced at 2:00, 1:00, 0:30) · [SIGN OUT] [STAY SIGNED IN].
 // - At 0: sign out and show "Your session has ended. Sign in again to continue."
-//   The page is left as it is behind the dialog (form values stay on screen).
+//   The page is left as it is behind the dialog (form values stay on screen), and the fields
+//   the user changed are kept in this tab's sessionStorage (forms/unsaved.ts — never
+//   passwords or identifiers) so they come back after SIGN IN returns to the same URL.
+// - A Server Action answering "Your session has ended" raises the same dialog (G9).
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import Box from '@mui/material/Box';
@@ -18,6 +21,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
 import { keepAlive, signOut } from '@/server/actions/auth';
+import { currentPath, SESSION_ENDED_EVENT, snapshotUnsavedWork } from '../forms/unsaved';
 
 const WARN_MS = 2 * 60 * 1000;
 const KEEPALIVE_EVERY_MS = 4 * 60 * 1000;
@@ -44,8 +48,10 @@ function writeShared(t: number) {
   }
 }
 
-export default function IdleTimeout({ idleTimeoutMin }: { idleTimeoutMin: number }) {
+export default function IdleTimeout({ idleTimeoutMin, userId }: { idleTimeoutMin: number; userId: string }) {
   const pathname = usePathname() ?? '/';
+  const [kept, setKept] = React.useState(0);
+  const [returnTo, setReturnTo] = React.useState<string>(pathname);
   const [timeoutMs, setTimeoutMs] = React.useState(Math.max(3, idleTimeoutMin) * 60 * 1000);
   const [phase, setPhase] = React.useState<'active' | 'warning' | 'ended'>('active');
   const [remaining, setRemaining] = React.useState(WARN_MS);
@@ -59,20 +65,31 @@ export default function IdleTimeout({ idleTimeoutMin }: { idleTimeoutMin: number
   const announced = React.useRef<Set<number>>(new Set());
 
   const endSession = React.useCallback(async () => {
+    if (phaseRef.current === 'ended') return;
+    phaseRef.current = 'ended';
+    setReturnTo(currentPath());
+    setKept(snapshotUnsavedWork(userId));
     setPhase('ended');
     try {
       await signOut();
     } catch {
       /* already signed out server-side */
     }
-  }, []);
+  }, [userId]);
+
+  // A Server Action found the session gone (useActionRunner raises the event).
+  React.useEffect(() => {
+    const onEnded = () => void endSession();
+    window.addEventListener(SESSION_ENDED_EVENT, onEnded);
+    return () => window.removeEventListener(SESSION_ENDED_EVENT, onEnded);
+  }, [endSession]);
 
   const ping = React.useCallback(async () => {
     lastKeepAlive.current = Date.now();
     try {
       const res = await keepAlive();
       if (!res.ok) {
-        setPhase('ended');
+        void endSession();
         return false;
       }
       setTimeoutMs(Math.max(3, res.idleTimeoutMin) * 60 * 1000);
@@ -80,7 +97,7 @@ export default function IdleTimeout({ idleTimeoutMin }: { idleTimeoutMin: number
     } catch {
       return true; // network blip: keep the local timer; the server stays authoritative
     }
-  }, []);
+  }, [endSession]);
 
   // Activity tracking (only while active — the warning must be answered explicitly).
   React.useEffect(() => {
@@ -156,11 +173,16 @@ export default function IdleTimeout({ idleTimeoutMin }: { idleTimeoutMin: number
 
   const signOutNow = async () => {
     setBusy(true);
-    await endSession();
+    phaseRef.current = 'ended'; // a deliberate sign-out keeps nothing
+    try {
+      await signOut();
+    } catch {
+      /* ignore */
+    }
     window.location.assign('/login');
   };
 
-  const loginHref = `/login?next=${encodeURIComponent(pathname)}`;
+  const loginHref = `/login?expired=1&next=${encodeURIComponent(returnTo)}`;
 
   return (
     <>
@@ -197,6 +219,12 @@ export default function IdleTimeout({ idleTimeoutMin }: { idleTimeoutMin: number
         </DialogTitle>
         <DialogContent>
           <Typography variant="body1">Sign in again to continue.</Typography>
+          {kept > 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Your unsaved entries on this page are kept on this device and will be filled in again after you sign in
+              (passwords and identity or bank numbers are never kept).
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions>
           <Button variant="contained" href={loginHref} autoFocus>

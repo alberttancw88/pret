@@ -7,7 +7,7 @@
 // items are absent from the DOM. That is NOT access control — every page calls requireUser.
 import * as React from 'react';
 import NextLink from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import AppBar from '@mui/material/AppBar';
 import Avatar from '@mui/material/Avatar';
 import Badge from '@mui/material/Badge';
@@ -64,7 +64,11 @@ import { signOut } from '@/server/actions/auth';
 import { findActive, resolveTitle, type NavBadgeKey, type NavIconKey, type NavItem, type NavSection } from './nav';
 import { PageTitleProvider, usePageTitleOverride } from './PageTitle';
 import NotificationPanel, { type ShellNotification } from './NotificationPanel';
+import type { NotificationRow } from '@/server/contracts/portal';
+import { fetchNotificationPanel, markAllNotificationsRead, openNotification } from '@/server/actions/portal';
+import { relativeTime } from '../portal/common';
 import IdleTimeout from './IdleTimeout';
+import UnsavedWorkRestorer from './UnsavedWorkRestorer';
 
 const ICONS: Record<NavIconKey, React.ElementType> = {
   home: HomeOutlinedIcon,
@@ -91,14 +95,15 @@ const BORDER = '#E4E6EC';
 
 export type AppShellProps = {
   sections: NavSection[];
-  user: { displayName: string; roleLabel: string; isExternal: boolean };
+  user: { id?: string; displayName: string; roleLabel: string; isExternal: boolean };
   version: string;
   /** Show the phone bottom bar (employee users only, IA §2). */
   showBottomBar: boolean;
   /** Approvals slot in the bottom bar (MGR/ADM/SA); otherwise Profile. */
   canApprove: boolean;
   badges?: Partial<Record<NavBadgeKey, number>>;
-  notifications?: ShellNotification[];
+  /** Bell panel (G5): latest notifications from getShellStatus(). */
+  notifications?: NotificationRow[];
   unreadCount?: number;
   privacyNoticePublished?: boolean;
   helpHref?: string;
@@ -114,6 +119,107 @@ function initials(name: string) {
 
 function countLabel(n: number) {
   return n > 99 ? '99+' : String(n);
+}
+
+/** Pages that change read state (e.g. /notifications) tell the bell the new unread count. */
+export const NOTIFICATIONS_CHANGED_EVENT = 'pret:notifications-changed';
+export function announceUnreadCount(unreadCount: number) {
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(NOTIFICATIONS_CHANGED_EVENT, { detail: { unreadCount } }));
+}
+
+/**
+ * G5 bell state: starts from the server render, refreshes on navigation (the layout does not
+ * re-render on client navigation), on window focus and when the bell opens.
+ */
+function useBell(initialItems: NotificationRow[], initialUnread: number) {
+  const router = useRouter();
+  const pathname = usePathname() ?? '';
+  const [items, setItems] = React.useState(initialItems);
+  const [unread, setUnread] = React.useState(initialUnread);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const last = React.useRef(0);
+
+  const refresh = React.useCallback(async (show = false) => {
+    last.current = Date.now();
+    if (show) setLoading(true);
+    try {
+      const res = await fetchNotificationPanel();
+      if (res.ok) {
+        setItems(res.panel.items);
+        setUnread(res.panel.unreadCount);
+        setError(null);
+      } else if (show) setError("Couldn't load notifications.");
+    } catch {
+      if (show) setError("Couldn't load notifications.");
+    } finally {
+      if (show) setLoading(false);
+    }
+  }, []);
+
+  const first = React.useRef(true);
+  React.useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      last.current = Date.now();
+      return;
+    }
+    if (Date.now() - last.current > 5000) void refresh();
+  }, [pathname, refresh]);
+
+  React.useEffect(() => {
+    const onFocus = () => Date.now() - last.current > 30000 && void refresh();
+    const onChanged = (e: Event) => {
+      const n = (e as CustomEvent<{ unreadCount?: number }>).detail?.unreadCount;
+      if (typeof n === 'number') setUnread(n);
+      void refresh();
+    };
+    window.addEventListener('focus', onFocus);
+    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, onChanged);
+    };
+  }, [refresh]);
+
+  const panelItems: ShellNotification[] = items.map((n) => ({
+    id: n.id,
+    title: n.title,
+    summary: n.summary,
+    href: n.href,
+    when: relativeTime(n.createdAt),
+    unread: n.unread,
+  }));
+
+  const open = async (n: ShellNotification, close: () => void) => {
+    close();
+    setItems((xs) => xs.map((x) => (x.id === n.id ? { ...x, unread: false } : x)));
+    let href = n.href;
+    try {
+      const res = await openNotification({ id: n.id });
+      if (res.ok) {
+        setUnread(res.unreadCount);
+        href = res.href ?? href;
+      }
+    } catch {
+      /* still follow the link */
+    }
+    if (href && href.startsWith('/') && !href.startsWith('//')) router.push(href);
+    else router.push('/notifications');
+  };
+
+  const markAll = async () => {
+    setItems((xs) => xs.map((x) => ({ ...x, unread: false })));
+    setUnread(0);
+    try {
+      const res = await markAllNotificationsRead();
+      if (!res.ok) void refresh();
+    } catch {
+      void refresh();
+    }
+  };
+
+  return { panelItems, unread, loading, error, refresh, open, markAll };
 }
 
 export default function AppShell(props: AppShellProps) {
@@ -148,6 +254,7 @@ function ShellFrame({
   const [collapsed, setCollapsed] = React.useState(false);
   const [userMenu, setUserMenu] = React.useState<HTMLElement | null>(null);
   const [bellAnchor, setBellAnchor] = React.useState<HTMLElement | null>(null);
+  const bell = useBell(notifications, unreadCount);
 
   // Remember the rail state per browser (best-effort; storage may be unavailable).
   React.useEffect(() => {
@@ -206,7 +313,15 @@ function ShellFrame({
   const bottomBar = showBottomBar && isPhone;
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100dvh', bgcolor: 'background.default' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        minHeight: '100dvh',
+        bgcolor: 'background.default',
+        // Phone pass (W2-006): sticky page actions sit ABOVE the fixed bottom bar, not under it.
+        '--pret-bottom-bar': bottomBar ? 'calc(56px + env(safe-area-inset-bottom))' : '0px',
+      }}
+    >
       <AppBar
         position="fixed"
         sx={{
@@ -275,11 +390,15 @@ function ShellFrame({
 
           <Tooltip title="Notifications">
             <IconButton
-              onClick={(e) => setBellAnchor(e.currentTarget)}
-              aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+              onClick={(e) => {
+                setBellAnchor(e.currentTarget);
+                void bell.refresh(true);
+              }}
+              aria-label={bell.unread > 0 ? `Notifications, ${bell.unread} unread` : 'Notifications'}
               aria-haspopup="dialog"
+              sx={{ width: 44, height: 44 }}
             >
-              <Badge badgeContent={unreadCount > 0 ? countLabel(unreadCount) : 0} color="error" invisible={unreadCount <= 0}>
+              <Badge badgeContent={bell.unread > 0 ? countLabel(bell.unread) : 0} color="error" invisible={bell.unread <= 0}>
                 <NotificationsNoneOutlinedIcon />
               </Badge>
             </IconButton>
@@ -332,13 +451,18 @@ function ShellFrame({
         </Toolbar>
       </AppBar>
 
-      {idleTimeoutMin ? <IdleTimeout idleTimeoutMin={idleTimeoutMin} /> : null}
+      {idleTimeoutMin ? <IdleTimeout idleTimeoutMin={idleTimeoutMin} userId={user.id ?? ''} /> : null}
 
       <NotificationPanel
         anchorEl={bellAnchor}
         onClose={() => setBellAnchor(null)}
-        items={notifications}
+        items={bell.panelItems}
         phone={isPhone}
+        loading={bell.loading}
+        error={bell.error}
+        onRetry={() => void bell.refresh(true)}
+        onMarkAllRead={() => void bell.markAll()}
+        onOpen={(n) => void bell.open(n, () => setBellAnchor(null))}
       />
 
       {/* Below 1024 px: temporary drawer (hamburger / More). */}
@@ -390,7 +514,14 @@ function ShellFrame({
           pb: bottomBar ? 'calc(56px + 24px + env(safe-area-inset-bottom))' : 3,
         }}
       >
-        <Box sx={{ maxWidth: theme.pret.contentMaxWidth, mx: 'auto' }}>{children}</Box>
+        <Box sx={{ maxWidth: theme.pret.contentMaxWidth, mx: 'auto' }}>
+          {user.id ? (
+            <React.Suspense fallback={null}>
+              <UnsavedWorkRestorer userId={user.id} />
+            </React.Suspense>
+          ) : null}
+          {children}
+        </Box>
       </Box>
 
       {bottomBar && (

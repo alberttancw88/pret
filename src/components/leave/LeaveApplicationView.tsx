@@ -488,7 +488,7 @@ export default function LeaveApplicationView({ app, mode, backHref }: { app: Lea
         <Box
           sx={{
             position: { xs: 'sticky', sm: 'static' },
-            bottom: 0,
+            bottom: 'var(--pret-bottom-bar, 0px)',
             zIndex: 2,
             bgcolor: { xs: 'background.paper', sm: 'transparent' },
             borderTop: { xs: '1px solid', sm: 0 },

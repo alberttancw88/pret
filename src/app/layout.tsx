@@ -8,6 +8,11 @@ export const metadata: Metadata = {
   title: { default: 'PRET', template: '%s · PRET' },
   description: "Interact's internal HR & Payroll system",
   robots: { index: false, follow: false },
+  // F-PRT-15 PWA (manifest.ts): iOS home-screen icon and standalone launch.
+  applicationName: 'PRET',
+  appleWebApp: { capable: true, title: 'PRET', statusBarStyle: 'default' },
+  icons: { icon: [{ url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' }], apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }] },
+  formatDetection: { telephone: false },
 };
 
 // viewport-fit=cover so the phone bottom bar and sticky actions can use safe-area insets.

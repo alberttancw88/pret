@@ -677,7 +677,7 @@ export default function ApplyLeaveForm({
           <Card
             sx={{
               position: 'sticky',
-              bottom: { xs: 0, md: 'auto' },
+              bottom: { xs: 'var(--pret-bottom-bar, 0px)', sm: 0, md: 'auto' },
               top: { md: 88 },
               zIndex: 2,
               boxShadow: { xs: '0 -4px 12px rgba(0,0,0,0.08)', md: undefined },

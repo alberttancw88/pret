@@ -6,6 +6,8 @@ import 'server-only';
 import * as React from 'react';
 import { requireUser } from '@/server/auth/current-user';
 import { getInboxCounts } from '@/server/queries/approvals';
+import { getShellStatus } from '@/server/queries/portal';
+import type { ShellStatus } from '@/server/contracts/portal';
 import pkg from '../../../package.json';
 import AppShell from './AppShell';
 import { buildNav, canApprove, isEmployeeUser, roleChipLabel } from './nav';
@@ -24,18 +26,26 @@ export default async function ServerShell({ children }: { children: React.ReactN
     }
   }
 
+  // G5 bell + G7 privacy link (W2-006). A failure never blocks the page: the bell starts
+  // empty and refreshes itself on the next navigation.
+  let status: ShellStatus = { notifications: { items: [], unreadCount: 0 }, privacyNoticePublished: false, hasEmployeeRecord: false };
+  try {
+    status = await getShellStatus();
+  } catch {
+    /* keep defaults */
+  }
+
   return (
     <AppShell
       sections={sections}
-      user={{ displayName: user.displayName, roleLabel: roleChipLabel(user), isExternal: user.isExternal }}
+      user={{ id: user.id, displayName: user.displayName, roleLabel: roleChipLabel(user), isExternal: user.isExternal }}
       version={pkg.version}
       showBottomBar={isEmployeeUser(user)}
       canApprove={canApprove(user)}
-      // Notifications are wired by W2-006/W2-007; 0 hides a badge.
       badges={{ approvals, changeRequests: 0 }}
-      notifications={[]}
-      unreadCount={0}
-      privacyNoticePublished={false}
+      notifications={status.notifications.items}
+      unreadCount={status.notifications.unreadCount}
+      privacyNoticePublished={status.privacyNoticePublished}
       idleTimeoutMin={user.idleTimeoutMin}
     >
       {children}

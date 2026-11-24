@@ -22,7 +22,7 @@ import ScheduleIcon from '@mui/icons-material/Schedule';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import StatusChip, { type StatusValue } from '../StatusChip';
 import MoneyText from '../MoneyText';
-import KpiTile, { DashboardSection, GRID_SX } from './KpiTile';
+import KpiTile, { DashboardSection, GRID3_SX, GRID_SX } from './KpiTile';
 import { formatDateTime } from '@/lib/format';
 import type { ToneName } from '@/theme/augment';
 
@@ -87,18 +87,21 @@ export default function AdminDashboard({ data, placeholder }: { data: AdminDashb
         </Alert>
       )}
 
-      <Stack direction="row" justifyContent="flex-end" alignItems="center" spacing={0.5}>
-        <Typography variant="caption" color="text.secondary">
-          as at <span className="pret-tnum">{formatDateTime(data.asAt)}</span>
-        </Typography>
-        <Tooltip title="Refresh dashboard">
-          <IconButton aria-label="Refresh dashboard" onClick={() => router.refresh()} sx={{ width: 44, height: 44 }}>
-            <RefreshIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      </Stack>
-
-      <DashboardSection title="HR">
+      <DashboardSection
+        title="HR"
+        action={
+          <Stack direction="row" alignItems="center" spacing={0.5}>
+            <Typography variant="body2" color="text.secondary">
+              as at <span className="pret-tnum">{formatDateTime(data.asAt)}</span>
+            </Typography>
+            <Tooltip title="Refresh dashboard">
+              <IconButton aria-label="Refresh dashboard" onClick={() => router.refresh()} sx={{ width: 40, height: 40, color: 'text.secondary' }}>
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        }
+      >
         <Box sx={GRID_SX}>
           <KpiTile label="Active headcount" value={hr.headcount} tone="violet" href="/employees" />
           <KpiTile label="On leave today" value={hr.onLeaveToday} tone="info" href="/leave/applications?when=today" />
@@ -182,20 +185,18 @@ export default function AdminDashboard({ data, placeholder }: { data: AdminDashb
 
         <Card sx={{ mt: 2 }}>
           <CardContent>
-            <Box
-              component="dl"
-              sx={{ m: 0, display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' } }}
-            >
+            {/* Review fix: three equal, left-aligned columns; label above, one value size (22 px). */}
+            <Box component="dl" sx={{ m: 0, ...GRID3_SX }}>
               {[
                 ['Excl. SST', claims.exclSst],
                 ['SST', claims.sst],
                 ['Total', claims.total],
               ].map(([label, amount]) => (
-                <Box key={label as string} sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
-                  <Typography component="dt" variant="caption" color="text.secondary">
+                <Box key={label as string}>
+                  <Typography component="dt" color="text.secondary" sx={{ fontSize: '0.84375rem', lineHeight: '19px', fontWeight: 600 }}>
                     {label}
                   </Typography>
-                  <Typography component="dd" sx={{ m: 0, fontSize: '1.25rem', lineHeight: 1.4, fontWeight: 700 }}>
+                  <Typography component="dd" className="pret-tnum" sx={{ m: 0, mt: 0.5, fontSize: '1.375rem', lineHeight: '30px', fontWeight: 700, letterSpacing: '-0.01em' }}>
                     <MoneyText amount={amount as number} />
                   </Typography>
                 </Box>
@@ -204,7 +205,7 @@ export default function AdminDashboard({ data, placeholder }: { data: AdminDashb
           </CardContent>
         </Card>
 
-        <Box sx={{ mt: 2, display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fill, minmax(260px, 1fr))' } }}>
+        <Box sx={{ mt: 2, ...GRID3_SX }}>
           <KpiTile
             label="Awaiting approval"
             value={claims.awaiting.count}

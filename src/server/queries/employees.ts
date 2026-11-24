@@ -251,11 +251,11 @@ async function loadPersonal(tx: Tx, id: string): Promise<PersonalDb | null> {
   return (await sql<PersonalDb>`select p.*, p.personal_email::text as personal_email from app.employee_personal p where p.employee_id = ${id}::uuid`.execute(tx)).rows[0] ?? null;
 }
 async function loadMarital(tx: Tx, id: string) {
-  return (await sql<{ marital_status: PersonalView['maritalStatus']; effective_date: string }>`
+  return (await sql<{ marital_status: NonNullable<PersonalView['maritalStatus']>; effective_date: string }>`
     select marital_status::text as marital_status, effective_date from app.employee_marital_history
      where employee_id = ${id}::uuid order by effective_date desc`.execute(tx)).rows;
 }
-function currentMarital(rows: { marital_status: PersonalView['maritalStatus']; effective_date: string }[], today: string) {
+function currentMarital(rows: { marital_status: NonNullable<PersonalView['maritalStatus']>; effective_date: string }[], today: string) {
   return rows.find((r) => r.effective_date <= today) ?? rows[rows.length - 1] ?? null;
 }
 const addr = (p: PersonalDb, mail = false): Address => mail
@@ -540,7 +540,7 @@ async function buildAdminProfile(tx: Tx, user: CurrentUser, accessToken: string,
       employeeNo: e.employee_no, fullName: e.full_name, preferredName: e.preferred_name,
       nricMasked: maskMykad(p?.nric_last4) ?? '', nricLast4: p?.nric_last4 ?? '', dateOfBirth: p?.date_of_birth ?? '',
       dobOverridden: p?.dob_overridden ?? false, age: p ? ageOn(p.date_of_birth, today) : 0, gender: e.gender, nationality: 'Malaysian',
-      race: p?.race ?? null, raceOther: p?.race_other ?? null, maritalStatus: mNow?.marital_status ?? 'single', maritalEffectiveDate: mNow?.effective_date ?? null,
+      race: p?.race ?? null, raceOther: p?.race_other ?? null, maritalStatus: mNow?.marital_status ?? null, maritalEffectiveDate: mNow?.effective_date ?? null,
       maritalHistory: marital.map((m) => ({ maritalStatus: m.marital_status, effectiveDate: m.effective_date })),
       photoFileId: e.photo_file_id, photoUrl: e.photo_file_id ? photos.get(e.photo_file_id) ?? null : null,
       passportNo: p?.passport_no ?? null, passportExpiry: p?.passport_expiry ?? null, highestQualification: p?.highest_qualification ?? null,
@@ -636,7 +636,7 @@ export async function getMyProfile(): Promise<MyProfile | null> {
       personal: {
         employeeNo: e.employee_no, fullName: e.full_name, preferredName: e.preferred_name, nric, nricLast4: p?.nric_last4 ?? '',
         dateOfBirth: p?.date_of_birth ?? '', age: p ? ageOn(p.date_of_birth, today) : 0, gender: e.gender, nationality: 'Malaysian',
-        race: p?.race ?? null, raceOther: p?.race_other ?? null, maritalStatus: mNow?.marital_status ?? 'single', maritalEffectiveDate: mNow?.effective_date ?? null,
+        race: p?.race ?? null, raceOther: p?.race_other ?? null, maritalStatus: mNow?.marital_status ?? null, maritalEffectiveDate: mNow?.effective_date ?? null,
         maritalHistory: marital.map((m) => ({ maritalStatus: m.marital_status, effectiveDate: m.effective_date })),
         photoFileId: e.photo_file_id, photoUrl: e.photo_file_id ? photos.get(e.photo_file_id) ?? null : null,
         passportNo: p?.passport_no ?? null, passportExpiry: p?.passport_expiry ?? null, highestQualification: p?.highest_qualification ?? null,

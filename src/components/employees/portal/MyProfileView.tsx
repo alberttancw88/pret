@@ -221,7 +221,7 @@ function PersonalSection({ me }: { me: MyProfile }) {
               { label: 'Nationality', value: p.nationality },
               { label: 'Race', value: p.race ? `${RACE_LABELS[p.race]}${p.raceOther ? ` (${p.raceOther})` : ''}` : '' },
               { label: 'Religion', value: p.religion ? RELIGION_LABELS[p.religion] : '' },
-              { label: 'Marital status', value: `${MARITAL_STATUS_LABELS[p.maritalStatus]}${p.maritalEffectiveDate ? ` since ${dateOr(p.maritalEffectiveDate)}` : ''}` },
+              { label: 'Marital status', value: p.maritalStatus ? `${MARITAL_STATUS_LABELS[p.maritalStatus]}${p.maritalEffectiveDate ? ` since ${dateOr(p.maritalEffectiveDate)}` : ''}` : '' },
               { label: 'Person with disability (OKU)', value: p.isOku ? 'Yes' : 'No' },
               { label: 'OKU card no.', value: p.okuCardNo, hidden: !p.isOku },
               { label: 'Passport no.', value: p.passportNo },

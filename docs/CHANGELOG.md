@@ -9,6 +9,19 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.13] — 2026-11-24 — Sunrise review fixes
+### Changed
+- Purple toned down (Albert's review): soft lavender portal Home hero with white leave tiles
+  (3 main types on desktop, "All n types"), soft-tint active nav item, softened sign-in gradient;
+  contrast tests updated.
+- Dashboard: one KPI tile structure (fixed 2-line label, 28 px number, details below, equal
+  heights and widths), 3-column money summary, header rows aligned.
+- Larger type scale app-wide: body/values 15 px weight 500 (16 px phone), labels 13 px, tables
+  14.5 px, nothing below 12.5 px except avatar initials.
+### Fixed
+- Profile showed "Single" when no marital status is recorded; now "—" (PCB derivation unchanged).
+- Tests: unit 117/117.
+
 ## [0.2.12] — 2026-11-23 — W2-009 Sunrise UI refresh
 ### Changed
 - New visual design "Sunrise" (D34, D35 — GATE 2 approved) for admin and self-service, desktop and

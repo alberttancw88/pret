@@ -325,7 +325,7 @@ export default function ClaimForm({
     <Box sx={{ pb: { xs: 24, sm: 2 } }}>
       <Stack spacing={2}>
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-          <Typography variant="h5" component="p" className="pret-tnum">
+          <Typography variant="h4" component="p" className="pret-tnum">
             {claimNo ?? (mode === 'behalf' ? 'New claim on behalf' : 'New claim')}
           </Typography>
           {status && <ClaimStatusChip status={status} />}

@@ -156,7 +156,7 @@ export default function LeaveCalendarView({
 
   const grid = (
     <Box sx={{ overflowX: 'auto' }}>
-      <Box component="table" sx={{ borderCollapse: 'collapse', minWidth: '100%', fontSize: 12 }} aria-label="Leave calendar">
+      <Box component="table" sx={{ borderCollapse: 'collapse', minWidth: '100%', fontSize: 12.5 }} aria-label="Leave calendar">
         <thead>
           <tr>
             <Box component="th" sx={{ position: 'sticky', left: 0, bgcolor: 'background.paper', zIndex: 1, textAlign: 'left', p: 1, minWidth: 160 }}>

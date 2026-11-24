@@ -634,7 +634,8 @@ export type PersonalView = {
   gender: Gender;                        // A7
   nationality: 'Malaysian';              // A8
   race: Race | null; raceOther: string | null;                   // A9/A10
-  maritalStatus: MaritalStatus; maritalEffectiveDate: string | null;   // A12/A13
+  /** null = no marital record (e.g. Super Admin seed record) — shown as "—", never defaulted to Single. */
+  maritalStatus: MaritalStatus | null; maritalEffectiveDate: string | null;   // A12/A13
   maritalHistory: { maritalStatus: MaritalStatus; effectiveDate: string }[];
   photoFileId: string | null; photoUrl: string | null;           // A16 (short-lived signed URL)
   passportNo: string | null; passportExpiry: string | null;      // A17/A18

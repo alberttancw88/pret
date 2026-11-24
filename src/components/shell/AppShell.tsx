@@ -117,7 +117,7 @@ const NAV_TILE: Record<NavIconKey, TileName> = {
 
 const COLLAPSE_KEY = 'pret.nav.collapsed';
 
-/** 32 × 32 pastel icon tile (§8.1). On the active (violet) item it turns translucent white. */
+/** 32 × 32 pastel icon tile (§8.1). On the active item it turns violet with a white icon. */
 function NavIconTile({ icon: Icon, hue, active }: { icon: React.ElementType; hue: TileName; active?: boolean }) {
   return (
     <Box
@@ -131,7 +131,7 @@ function NavIconTile({ icon: Icon, hue, active }: { icon: React.ElementType; hue
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: active ? 'rgba(255,255,255,0.20)' : t.palette.tile[hue].bg,
+        bgcolor: active ? t.palette.primary.main : t.palette.tile[hue].bg,
         color: active ? '#FFFFFF' : t.palette.tile[hue].ink,
       })}
     >
@@ -157,7 +157,7 @@ function RoleChip({ label }: { label: string }) {
   return isStatusValue('role', label) ? (
     <StatusChip set="role" value={label} />
   ) : (
-    <Chip label={label} size="small" sx={{ height: 20, fontSize: '0.6875rem', fontWeight: 700 }} />
+    <Chip label={label} size="small" sx={{ height: 20, fontSize: '0.75rem', fontWeight: 700 }} />
   );
 }
 
@@ -725,7 +725,7 @@ const bottomActionSx = {
   '&.Mui-selected .pret-bb-pill': { bgcolor: 'primary.main', color: '#FFFFFF' },
 } as const;
 
-const bbBadgeSx = { '& .MuiBadge-badge': { minWidth: 18, height: 18, fontSize: 11, px: 0.5, top: -2, right: -6 } } as const;
+const bbBadgeSx = { '& .MuiBadge-badge': { minWidth: 18, height: 18, fontSize: 12, px: 0.5, top: -2, right: -6 } } as const;
 
 // ---------------------------------------------------------------------------
 
@@ -765,7 +765,8 @@ function DrawerContent({
   const badgeFor = (key?: NavBadgeKey) => (key ? badges[key] ?? 0 : 0);
   const seed = user.id ?? user.displayName;
 
-  // §8.1: 46 px items, radius 14; the active item is the only saturated element in the rail.
+  // §8.1: 46 px items, radius 14. Active (toned down after review): soft violet tint with violet
+  // text; only its icon tile is solid violet.
   const itemSx = (active: boolean) => ({
     minHeight: { xs: 48, md: 46 },
     mx: rail ? 1.5 : 1,
@@ -775,9 +776,9 @@ function DrawerContent({
     justifyContent: rail ? 'center' : 'flex-start',
     color: 'text.primary',
     ...(active && {
-      bgcolor: 'primary.main',
-      color: '#FFFFFF',
-      '&:hover': { bgcolor: 'primary.dark' },
+      bgcolor: 'tone.violet.bg',
+      color: 'primary.dark',
+      '&:hover': { bgcolor: 'grey.300' },
     }),
   });
 
@@ -805,7 +806,7 @@ function DrawerContent({
               label={`v${version}`}
               size="small"
               variant="outlined"
-              sx={{ height: 20, fontSize: '0.6875rem', lineHeight: '16px', fontWeight: 600, color: 'text.secondary', borderColor: 'grey.300', '& .MuiChip-label': { px: 1 } }}
+              sx={{ height: 20, fontSize: '0.75rem', lineHeight: '16px', fontWeight: 600, color: 'text.secondary', borderColor: 'grey.300', '& .MuiChip-label': { px: 1 } }}
             />
           )}
         </Stack>
@@ -886,14 +887,13 @@ function DrawerContent({
                       href={item.href ?? '#'}
                       aria-current={leafActive ? 'page' : undefined}
                       aria-label={rail ? item.label : undefined}
-                      className={leafActive ? 'pret-on-dark' : undefined}
-                      sx={itemSx(leafActive)}
+                                            sx={itemSx(leafActive)}
                     >
                       {iconNode(leafActive)}
                       {!rail && (
                         <ListItemText primary={item.label} slotProps={{ primary: { variant: 'subtitle2', fontWeight: leafActive ? 700 : 600, noWrap: true } }} />
                       )}
-                      {badgeNode(leafActive)}
+                      {badgeNode(false)}
                     </ListItemButton>
                   );
                   return (
@@ -960,14 +960,13 @@ function DrawerContent({
                                   component={NextLink}
                                   href={leaf.href}
                                   aria-current={active ? 'page' : undefined}
-                                  className={active ? 'pret-on-dark' : undefined}
-                                  sx={{ ...itemSx(active), minHeight: { xs: 48, md: 40 }, pl: 6.5 }}
+                                                                    sx={{ ...itemSx(active), minHeight: { xs: 48, md: 40 }, pl: 6.5 }}
                                 >
                                   <ListItemText
                                     primary={leaf.label}
                                     slotProps={{ primary: { variant: 'body2', fontWeight: active ? 700 : 500, noWrap: true } }}
                                   />
-                                  {lc > 0 && <CountBadge count={lc} label={`${lc} items awaiting action`} onDark={active} />}
+                                  {lc > 0 && <CountBadge count={lc} label={`${lc} items awaiting action`} />}
                                 </ListItemButton>
                               </li>
                             );

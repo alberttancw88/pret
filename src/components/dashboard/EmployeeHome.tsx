@@ -102,53 +102,52 @@ function CardTitle({ title, href, linkLabel = 'See all' }: { title: string; href
 
 const BALANCE_HUES: TileName[] = ['lavender', 'mint', 'peach', 'sky', 'rose'];
 
-/** Pastel balance tile inside the hero (§8.4 / §8.5): tile bg, one ink colour for all text. */
+/**
+ * Balance tile inside the hero (§8.4, toned down after review): white face, 4 px accent in the
+ * tile hue, label in the tile ink, number in text.primary.
+ */
 function BalanceTile({ b, hue }: { b: LeaveBalance; hue: TileName }) {
-  const ink = `tile.${hue}.ink`;
   return (
-    <Card sx={{ height: '100%', scrollSnapAlign: 'start', bgcolor: `tile.${hue}.bg`, border: 'none', borderRadius: '20px' }}>
-      <CardActionArea component={NextLink} href={b.href ?? '/my/leave/balances'} sx={{ height: '100%', alignItems: 'stretch' }}>
-        <Box sx={{ px: { xs: 1.75, md: 2.25 }, py: { xs: 1.5, md: 2 }, minWidth: 0, color: ink }}>
+    <Card sx={{ height: { xs: 'auto', md: '100%' }, scrollSnapAlign: 'start', bgcolor: 'background.paper', border: 'none', borderRadius: '18px', boxShadow: '0 1px 2px rgba(31,27,59,0.06)' }}>
+      <CardActionArea component={NextLink} href={b.href ?? '/my/leave/balances'} sx={{ height: '100%', alignItems: 'stretch', display: 'flex' }}>
+        <Box aria-hidden sx={{ width: 4, flexShrink: 0, bgcolor: `tile.${hue}.accent` }} />
+        <Box sx={{ px: { xs: 1.75, md: 2 }, py: { xs: 1.5, md: 1.75 }, minWidth: 0, flex: 1 }}>
           <Stack direction="row" spacing={0.75} alignItems="center">
             <Box
               aria-hidden
               sx={(t) => ({ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, bgcolor: b.colour ?? t.palette.leaveType[b.colorIndex % t.palette.leaveType.length] })}
             />
-            <Typography variant="caption" component="p" noWrap sx={{ fontWeight: 700, color: ink }}>
+            <Typography variant="body2" component="p" noWrap sx={{ fontWeight: 600, color: `tile.${hue}.ink` }}>
               {b.name}
             </Typography>
           </Stack>
           {b.available === null ? (
-            <Typography variant="body2" sx={{ mt: 1.5, color: ink, fontWeight: 600 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
               {b.noBalanceLabel ?? 'Approval only'}
             </Typography>
           ) : (
             <>
               <Stack direction="row" alignItems="baseline" spacing={0.5} sx={{ mt: 0.5 }}>
-                <Typography variant="kpi" component="p" sx={{ color: b.available < 0 ? 'error.dark' : ink }}>
+                <Typography variant="kpi" component="p" sx={{ color: b.available < 0 ? 'error.main' : 'text.primary' }}>
                   {`${b.available < 0 ? '−' : ''}${Math.abs(b.available).toFixed(1)}`}
                 </Typography>
-                <Typography variant="body2" fontWeight={600} sx={{ color: ink }}>
-                  d
+                <Typography variant="body2" color="text.secondary">
+                  days
                 </Typography>
               </Stack>
-              <Typography variant="caption" component="p" sx={{ color: ink }}>
+              <Typography variant="caption" component="p" color="text.secondary">
                 Available
+                {b.earnedToDate !== undefined ? ` · ${b.earnedToDate.toFixed(1)} earned to date` : ''}
               </Typography>
               {b.available < 0 && b.allowedNegative !== undefined && (
-                <Typography variant="caption" component="p" sx={{ color: ink }}>
+                <Typography variant="caption" component="p" color="text.secondary">
                   Allowed down to −{b.allowedNegative.toFixed(1)}
-                </Typography>
-              )}
-              {b.earnedToDate !== undefined && (
-                <Typography variant="caption" component="p" sx={{ color: ink }}>
-                  {b.earnedToDate.toFixed(1)} earned to date
                 </Typography>
               )}
             </>
           )}
           {b.expiring && (
-            <Stack direction="row" spacing={0.75} sx={{ mt: 1, px: 1, py: 0.75, borderRadius: '12px', bgcolor: 'tone.warning.bg', color: 'tone.warning.fg' }}>
+            <Stack direction="row" spacing={0.75} sx={{ mt: 1, px: 1, py: 0.5, borderRadius: '10px', bgcolor: 'tone.warning.bg', color: 'tone.warning.fg' }}>
               <WarningAmberIcon aria-hidden sx={{ fontSize: 16, mt: '1px' }} />
               <Typography variant="caption" component="p">
                 {b.expiring.days.toFixed(1)} expires {formatDate(b.expiring.date)}
@@ -168,64 +167,67 @@ function todayLine() {
   return `${weekday} · ${formatDate(now)}`;
 }
 
-/** Portal Home hero (§8.4): gradient, greeting, leave balances. */
+/** Main leave types shown in the hero; "All ›" opens the full list. */
+const HERO_TILES = { phone: 4, desktop: 3 };
+
+/** Portal Home hero (§8.4, toned down): soft lavender band, dark ink, greeting, main balances. */
 function PortalHero({ displayName, roleLabel, balances }: { displayName: string; roleLabel: string; balances: LeaveBalance[] }) {
+  const shown = balances.slice(0, HERO_TILES.phone);
+  const more = balances.length - HERO_TILES.desktop;
   return (
     <Box
       component="section"
       aria-label="Greeting and leave balances"
-      className="pret-on-dark"
       sx={(t) => ({
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: { xs: '26px', md: '28px' },
+        borderRadius: { xs: '24px', md: '24px' },
         background: t.palette.hero.gradient,
-        boxShadow: t.palette.hero.shadow,
-        color: '#FFFFFF',
+        border: `1px solid ${t.palette.divider}`,
+        color: t.palette.hero.ink,
         px: { xs: 2, md: 3 },
-        pt: { xs: 2.25, md: 3 },
-        pb: { xs: 2, md: 3 },
+        pt: { xs: 2, md: 2.5 },
+        pb: { xs: 2, md: 2.5 },
       })}
     >
-      {/* Decorative circle only — never under text beyond the 5.84 : 1 worst case. */}
+      {/* Decorative circle only. */}
       <Box
         aria-hidden
-        sx={(t) => ({ position: 'absolute', top: -40, right: -40, width: 140, height: 140, borderRadius: '50%', bgcolor: t.palette.hero.decor, pointerEvents: 'none' })}
+        sx={(t) => ({ position: 'absolute', top: -50, right: -40, width: 160, height: 160, borderRadius: '50%', bgcolor: t.palette.hero.decor, pointerEvents: 'none' })}
       />
       <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1} sx={{ position: 'relative' }}>
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="body2" sx={(t) => ({ color: t.palette.hero.subtext })} suppressHydrationWarning>
             {todayLine()}
           </Typography>
-          <Typography variant="h3" component="h2" sx={{ color: '#FFFFFF', mt: 0.25, overflowWrap: 'anywhere', '@media (max-width:599.95px)': { fontSize: '1.5rem', lineHeight: '2rem' } }}>
+          <Typography variant="h3" component="h2" sx={(t) => ({ color: t.palette.hero.ink, mt: 0.25, overflowWrap: 'anywhere' })}>
             Hi, {displayName}
           </Typography>
         </Box>
         <Chip
           label={roleLabel}
           size="small"
-          sx={[chipSx('violet', 'filled'), chipBaseSx(true), { flexShrink: 0, mt: 0.5 }]}
+          sx={[chipBaseSx(true), { flexShrink: 0, mt: 0.5, bgcolor: 'background.paper', color: 'primary.dark', border: '1px solid', borderColor: 'grey.300' }]}
         />
       </Stack>
 
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: { xs: 1.5, md: 2.5 }, mb: 1, position: 'relative' }}>
-        <Typography variant="h6" component="h3" sx={{ color: '#FFFFFF' }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: { xs: 1.5, md: 2 }, mb: 1, position: 'relative' }}>
+        <Typography variant="h6" component="h3">
           Leave balances
         </Typography>
         <Link
           component={NextLink}
           href="/my/leave/balances"
-          underline="always"
           variant="body2"
-          sx={{ color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', minHeight: 44, px: 0.5 }}
+          sx={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, px: 0.5 }}
         >
-          All
-          <ChevronRightIcon aria-hidden sx={{ fontSize: 16 }} />
+          {more > 0 ? `All ${balances.length} types` : 'All'}
+          <ChevronRightIcon aria-hidden sx={{ fontSize: 18 }} />
         </Link>
       </Stack>
 
       {balances.length === 0 ? (
-        <Box sx={{ bgcolor: 'background.paper', color: 'text.primary', borderRadius: '20px', position: 'relative' }}>
+        <Box sx={{ bgcolor: 'background.paper', borderRadius: '18px', position: 'relative' }}>
           <EmptyState title="No leave types available yet — contact HR" minHeight={120} />
         </Box>
       ) : (
@@ -242,10 +244,12 @@ function PortalHero({ displayName, roleLabel, balances }: { displayName: string;
             px: { xs: 2, md: 0 },
             pb: { xs: 0.5, md: 0 },
             scrollbarWidth: 'none',
-            '& > *': { flex: { xs: '0 0 148px', md: 'initial' } },
+            '& > *': { flex: { xs: '0 0 156px', md: 'initial' } },
+            // Desktop: one row of three main types; the rest are behind "All".
+            [`& > :nth-of-type(n+${HERO_TILES.desktop + 1})`]: { display: { md: 'none' } },
           }}
         >
-          {balances.map((b, i) => (
+          {shown.map((b, i) => (
             <BalanceTile key={b.id} b={b} hue={BALANCE_HUES[i % BALANCE_HUES.length]} />
           ))}
         </Box>
@@ -547,7 +551,7 @@ export default function EmployeeHome({ displayName, roleLabel, data, placeholder
                             <Typography sx={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1.1 }} className="pret-tnum">
                               {d}
                             </Typography>
-                            <Typography variant="caption" sx={{ lineHeight: 1.1, fontSize: '0.6875rem' }}>
+                            <Typography variant="caption" sx={{ lineHeight: 1.1, fontSize: '0.75rem', fontWeight: 600 }}>
                               {MONTHS[m - 1]}
                             </Typography>
                           </Box>

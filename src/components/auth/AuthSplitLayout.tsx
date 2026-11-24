@@ -28,14 +28,14 @@ export default function AuthSplitLayout({ children, version }: { children: React
           m: 2,
           mr: 0,
           borderRadius: '28px',
-          background: t.palette.hero.gradient,
-          boxShadow: t.palette.hero.shadow,
+          background: t.palette.brand.gradient,
+          boxShadow: t.palette.brand.shadow,
           color: '#FFFFFF',
         })}
       >
         {/* Decorative circles only (never under text beyond 5.84 : 1). */}
-        <Box aria-hidden sx={(t) => ({ position: 'absolute', top: -80, right: -80, width: 280, height: 280, borderRadius: '50%', bgcolor: t.palette.hero.decor, pointerEvents: 'none' })} />
-        <Box aria-hidden sx={(t) => ({ position: 'absolute', bottom: -120, left: -60, width: 320, height: 320, borderRadius: '50%', bgcolor: t.palette.hero.decor, pointerEvents: 'none' })} />
+        <Box aria-hidden sx={(t) => ({ position: 'absolute', top: -80, right: -80, width: 280, height: 280, borderRadius: '50%', bgcolor: t.palette.brand.decor, pointerEvents: 'none' })} />
+        <Box aria-hidden sx={(t) => ({ position: 'absolute', bottom: -120, left: -60, width: 320, height: 320, borderRadius: '50%', bgcolor: t.palette.brand.decor, pointerEvents: 'none' })} />
         <Box sx={{ position: 'relative', bgcolor: '#FFFFFF', borderRadius: '24px', px: 3.5, py: 2.5, boxShadow: '0 12px 28px -12px rgba(31,27,59,0.45)' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/interact-logo.png" alt={LOGO_ALT} style={{ width: 160, height: 'auto', display: 'block' }} />
@@ -43,10 +43,10 @@ export default function AuthSplitLayout({ children, version }: { children: React
         <Typography variant="h1" component="p" sx={{ mt: 2, color: '#FFFFFF', position: 'relative' }}>
           PRET
         </Typography>
-        <Typography variant="body2" component="p" sx={(t) => ({ mt: -1.5, color: t.palette.hero.subtext, position: 'relative' })} className="pret-tnum">
+        <Typography variant="body2" component="p" sx={(t) => ({ mt: -1.5, color: t.palette.brand.subtext, position: 'relative' })} className="pret-tnum">
           v{version}
         </Typography>
-        <Typography variant="h5" component="p" sx={(t) => ({ color: t.palette.hero.subtext, position: 'relative' })}>
+        <Typography variant="h5" component="p" sx={(t) => ({ color: t.palette.brand.subtext, position: 'relative' })}>
           HR &amp; Payroll
         </Typography>
       </Box>

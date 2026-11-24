@@ -70,7 +70,7 @@ export function CompletenessBadge({ c, href }: { c: Completeness; href?: string 
   const bg = c.pct >= 100 ? 'tone.success.bg' : c.pct >= 80 ? 'tone.warning.bg' : 'tone.error.bg';
   const tip = c.missing.length ? `Missing: ${c.missing.map((m) => m.label + (m.payroll ? ' (payroll)' : '')).join(', ')}` : 'Complete';
   const badge = (
-    <Box component="span" className="pret-tnum" sx={{ px: 1, py: 0.25, borderRadius: 1, fontSize: 13, fontWeight: 600, color, bgcolor: bg, whiteSpace: 'nowrap' }}>
+    <Box component="span" className="pret-tnum" sx={{ px: 1, py: 0.25, borderRadius: 1, fontSize: 13.5, fontWeight: 600, color, bgcolor: bg, whiteSpace: 'nowrap' }}>
       {c.pct}%
     </Box>
   );

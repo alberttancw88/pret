@@ -40,14 +40,32 @@ export type KpiTileProps = {
   children?: React.ReactNode;
 };
 
+/**
+ * Dashboard tile grid (review fix): fixed equal columns so every tile in a row has the same
+ * width and spacing, and tiles stretch to equal height. 2 columns on phone/tablet, 4 on desktop.
+ */
 export const GRID_SX = {
   display: 'grid',
   gap: 2,
-  gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(auto-fill, minmax(176px, 1fr))' },
+  alignItems: 'stretch',
+  gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' },
+} as const;
+
+/** Three equal columns (bottom dashboard row, money summary). */
+export const GRID3_SX = {
+  display: 'grid',
+  gap: 2,
+  alignItems: 'stretch',
+  gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(3, minmax(0, 1fr))' },
 } as const;
 
 /** Hue for the n-th pastel tile in a strip (§8.5). */
 export const PASTEL_ORDER: TileName[] = ['lavender', 'sky', 'peach', 'mint'];
+
+// One structure on every tile (review fix): fixed 2-line label area (13.5/600) with the chevron
+// top-right, so every number sits on the same baseline across a row; the number is one size
+// (kpi 28/34 700); secondary text sits on its own line below in 13 px.
+const LABEL_LINE = 19;
 
 export default function KpiTile({
   label,
@@ -61,7 +79,7 @@ export default function KpiTile({
   href,
   loading,
   error,
-  minHeight = 112,
+  minHeight = 132,
   children,
 }: KpiTileProps) {
   if (loading) return <TileSkeleton minHeight={minHeight} />;
@@ -72,12 +90,27 @@ export default function KpiTile({
   const inner = (
     <Box sx={{ display: 'flex', height: '100%', minHeight }}>
       {!pastel && <Box aria-hidden sx={(t) => ({ width: 4, flexShrink: 0, bgcolor: t.palette.tone[tone].solid })} />}
-      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: { xs: 1.75, sm: 2.25 }, flex: 1, minWidth: 0 }}>
-        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
-          <Typography variant="caption" component="h3" sx={{ fontWeight: 700, lineHeight: '16px', color: ink('text.secondary') }}>
+      <Box sx={{ px: { xs: 1.5, sm: 2.25 }, py: { xs: 1.5, sm: 2 }, flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={0.5}>
+          <Typography
+            component="h3"
+            sx={{
+              fontSize: '0.84375rem',
+              lineHeight: `${LABEL_LINE}px`,
+              fontWeight: 600,
+              color: ink('text.secondary'),
+              // Fixed label area: 2 lines (3 on narrow phone tiles) so numbers share a baseline.
+              minHeight: { xs: LABEL_LINE * 3, sm: LABEL_LINE * 2 },
+              display: '-webkit-box',
+              WebkitLineClamp: { xs: 3, sm: 2 },
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+            title={label}
+          >
             {label}
           </Typography>
-          {href && <ChevronRightIcon aria-hidden sx={{ fontSize: 18, color: ink('primary.dark'), mt: '-1px' }} />}
+          {href && <ChevronRightIcon aria-hidden sx={{ fontSize: 20, color: ink('primary.dark'), flexShrink: 0, mt: '-1px', mr: '-6px' }} />}
         </Stack>
         {error ? (
           <Box sx={{ mt: 1 }}>
@@ -86,24 +119,24 @@ export default function KpiTile({
         ) : (
           <>
             {value !== undefined && (
-              <Stack direction="row" alignItems="baseline" spacing={0.75} sx={{ mt: 0.75, flexWrap: 'wrap' }}>
+              <Stack direction="row" alignItems="baseline" spacing={0.75} sx={{ mt: 0.75 }}>
                 <Typography variant="kpi" component="p" sx={{ color: ink('text.primary') }}>
                   {value}
                 </Typography>
                 {unit && (
-                  <Typography variant="body2" fontWeight={600} sx={{ color: ink('text.secondary') }}>
-                    {unit}
-                  </Typography>
-                )}
-                {secondary && (
                   <Typography variant="body2" sx={{ color: ink('text.secondary') }}>
-                    {secondary}
+                    {unit}
                   </Typography>
                 )}
               </Stack>
             )}
+            {secondary && (
+              <Typography component="div" className="pret-tnum" sx={{ fontSize: '0.8125rem', lineHeight: '18px', fontWeight: 500, mt: 0.25, color: ink('text.secondary') }}>
+                {secondary}
+              </Typography>
+            )}
             {subLine && (
-              <Typography variant="caption" component="div" sx={{ mt: 0.5, color: ink('text.secondary') }}>
+              <Typography component="div" sx={{ fontSize: '0.8125rem', lineHeight: '18px', fontWeight: 500, mt: 0.25, color: ink('text.secondary') }}>
                 {subLine}
               </Typography>
             )}
@@ -137,8 +170,9 @@ export default function KpiTile({
 export function DashboardSection({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <Box component="section" aria-label={title} sx={{ mt: 4, '&:first-of-type': { mt: 0 } }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5, gap: 1, flexWrap: 'wrap' }}>
-        <Typography variant="overline" component="h2" color="text.secondary">
+      {/* Header row: section label left, its controls (as-at line, period toggle) right, one baseline. */}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5, gap: 1, flexWrap: 'wrap', minHeight: 44 }}>
+        <Typography variant="overline" component="h2" color="text.secondary" sx={{ fontSize: '0.8125rem', letterSpacing: '0.08em' }}>
           {title}
         </Typography>
         {action}

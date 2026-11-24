@@ -12,6 +12,8 @@ export type Hero = {
   /** The two gradient stops (for contrast checks and solid fallbacks). */
   stops: [string, string];
   decor: string;
+  /** Main text on the surface (headline, name). */
+  ink: string;
   subtext: string;
   shadow: string;
 };
@@ -53,6 +55,8 @@ declare module '@mui/material/styles' {
     tone: Record<ToneName, Tone>;
     tile: Record<TileName, Tile>;
     hero: Hero;
+    /** Sign-in brand panel (dark gradient, white text). */
+    brand: Hero;
     leaveType: string[];
     link: string;
     controlBorder: string;
@@ -62,6 +66,7 @@ declare module '@mui/material/styles' {
     tone?: Record<ToneName, Tone>;
     tile?: Record<TileName, Tile>;
     hero?: Hero;
+    brand?: Hero;
     leaveType?: string[];
     link?: string;
     controlBorder?: string;

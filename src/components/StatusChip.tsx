@@ -198,7 +198,7 @@ export function chipBaseSx(compact = false) {
   return {
     height: compact ? 20 : 24,
     borderRadius: '999px',
-    fontSize: compact ? '0.6875rem' : '0.75rem',
+    fontSize: compact ? '0.75rem' : '0.78125rem', // 12 / 12.5 px (review: nothing below 12)
     lineHeight: compact ? '16px' : '16px',
     fontWeight: 700,
     maxWidth: '100%',

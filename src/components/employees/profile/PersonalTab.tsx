@@ -40,7 +40,7 @@ function toForm(ctx: ProfileCtx): IdentityForm {
     gender: p.gender,
     race: p.race ?? '',
     raceOther: p.raceOther ?? '',
-    maritalStatus: p.maritalStatus,
+    maritalStatus: p.maritalStatus ?? '',
     maritalEffectiveDate: p.maritalEffectiveDate ?? '',
     passportNo: p.passportNo ?? '',
     passportExpiry: p.passportExpiry ?? '',
@@ -78,7 +78,7 @@ export default function PersonalTab({ ctx, sensitive }: { ctx: ProfileCtx; sensi
           race: form.race,
           raceOther: form.race === 'others' ? form.raceOther : '',
           maritalStatus: form.maritalStatus as 'single',
-          maritalEffectiveDate: form.maritalStatus !== p.maritalStatus ? form.maritalEffectiveDate : p.maritalEffectiveDate ?? '',
+          maritalEffectiveDate: form.maritalStatus !== (p.maritalStatus ?? '') ? form.maritalEffectiveDate : p.maritalEffectiveDate ?? '',
           passportNo: form.passportNo,
           passportExpiry: form.passportNo ? form.passportExpiry : '',
           highestQualification: form.highestQualification,
@@ -89,7 +89,7 @@ export default function PersonalTab({ ctx, sensitive }: { ctx: ProfileCtx; sensi
   };
 
   const locks = own ? { fullName: OWN_LOCK, race: OWN_LOCK, maritalStatus: OWN_LOCK } : {};
-  const maritalChanged = form.maritalStatus !== p.maritalStatus;
+  const maritalChanged = form.maritalStatus !== (p.maritalStatus ?? '');
 
   return (
     <Stack spacing={2}>
@@ -152,7 +152,7 @@ export default function PersonalTab({ ctx, sensitive }: { ctx: ProfileCtx; sensi
               { label: 'Gender', value: GENDER_LABELS[p.gender] },
               { label: 'Nationality', value: p.nationality },
               { label: 'Race', value: p.race ? `${RACE_LABELS[p.race]}${p.raceOther ? ` (${p.raceOther})` : ''}` : '' },
-              { label: 'Marital status', value: `${MARITAL_STATUS_LABELS[p.maritalStatus]}${p.maritalEffectiveDate ? ` since ${dateOr(p.maritalEffectiveDate)}` : ''}` },
+              { label: 'Marital status', value: p.maritalStatus ? `${MARITAL_STATUS_LABELS[p.maritalStatus]}${p.maritalEffectiveDate ? ` since ${dateOr(p.maritalEffectiveDate)}` : ''}` : '' },
               {
                 label: 'Marital history',
                 value: p.maritalHistory.length > 1 ? p.maritalHistory.map((h) => `${MARITAL_STATUS_LABELS[h.maritalStatus]} from ${dateOr(h.effectiveDate)}`).join(' · ') : '',

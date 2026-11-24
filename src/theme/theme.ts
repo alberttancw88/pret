@@ -263,9 +263,9 @@ export const theme = createTheme({
           overflow: 'visible',
           pointerEvents: 'auto',
           marginBottom: 6,
-          fontSize: 12,
-          lineHeight: '16px',
-          fontWeight: 700,
+          fontSize: 13,
+          lineHeight: '18px',
+          fontWeight: 600,
           color: C.text2,
           '&.Mui-focused': { color: C.primaryDark },
           '&.Mui-error': { color: C.error },
@@ -277,9 +277,9 @@ export const theme = createTheme({
     MuiFormLabel: {
       styleOverrides: {
         root: {
-          fontSize: 12,
-          lineHeight: '16px',
-          fontWeight: 700,
+          fontSize: 13,
+          lineHeight: '18px',
+          fontWeight: 600,
           color: C.text2,
           '&.Mui-focused': { color: C.primaryDark },
           '&.Mui-error': { color: C.error },
@@ -310,6 +310,7 @@ export const theme = createTheme({
         notchedOutline: { borderColor: C.control },
         input: {
           fontSize: 15,
+          fontWeight: 500,
           padding: '11px 14px',
           [PHONE]: { fontSize: 16, paddingBlock: 12 },
         },
@@ -335,7 +336,7 @@ export const theme = createTheme({
     },
     MuiFormHelperText: {
       styleOverrides: {
-        root: { marginLeft: 2, fontSize: 12, lineHeight: '16px', color: C.text2, '&.Mui-error': { color: C.error } },
+        root: { marginLeft: 2, fontSize: 12.5, lineHeight: '17px', fontWeight: 500, color: C.text2, '&.Mui-error': { color: C.error } },
       },
     },
     MuiCheckbox: {
@@ -404,7 +405,7 @@ export const theme = createTheme({
     // ---- Chips (StatusChip builds on this) ----
     MuiChip: {
       styleOverrides: {
-        root: { height: 24, borderRadius: radius.pill, fontWeight: 700, fontSize: 12 },
+        root: { height: 24, borderRadius: radius.pill, fontWeight: 700, fontSize: 12.5 },
         label: { paddingLeft: 10, paddingRight: 10 },
         icon: { fontSize: 14, marginLeft: 6, marginRight: -4 },
       },
@@ -413,7 +414,7 @@ export const theme = createTheme({
     MuiTooltip: {
       defaultProps: { arrow: true, enterTouchDelay: 0 },
       styleOverrides: {
-        tooltip: { backgroundColor: C.text, color: '#FFFFFF', fontSize: 12, lineHeight: '18px', borderRadius: 10, padding: '6px 12px' },
+        tooltip: { backgroundColor: C.text, color: '#FFFFFF', fontSize: 12.5, lineHeight: '18px', fontWeight: 500, borderRadius: 10, padding: '6px 12px' },
         arrow: { color: C.text },
       },
     },
@@ -426,7 +427,8 @@ export const theme = createTheme({
     MuiMenuItem: {
       styleOverrides: {
         root: {
-          fontSize: 14,
+          fontSize: 14.5,
+          fontWeight: 500,
           borderRadius: 10,
           margin: '0 6px',
           '&.Mui-selected': { backgroundColor: C.lavender, color: C.primaryDark, fontWeight: 700 },
@@ -492,11 +494,11 @@ export const theme = createTheme({
           color: C.text2,
           '&.Mui-selected': { color: C.primaryDark, paddingTop: 6 },
         },
-        label: { fontSize: 12, lineHeight: '16px', fontWeight: 600, marginTop: 2, '&.Mui-selected': { fontSize: 12, fontWeight: 700 } },
+        label: { fontSize: 12.5, lineHeight: '16px', fontWeight: 600, marginTop: 2, '&.Mui-selected': { fontSize: 12.5, fontWeight: 700 } },
       },
     },
     MuiBreadcrumbs: {
-      styleOverrides: { root: { fontSize: 12, color: C.text2 }, separator: { margin: '0 6px' } },
+      styleOverrides: { root: { fontSize: 12.5, color: C.text2 }, separator: { margin: '0 6px' } },
     },
     MuiAvatar: {
       styleOverrides: {
@@ -509,10 +511,10 @@ export const theme = createTheme({
     // ---- Tables: plain white card, lavender-white header, comfortable rows (§7, §10) ----
     MuiTableCell: {
       styleOverrides: {
-        root: { fontSize: 14, lineHeight: '20px', padding: '16px 16px', borderBottom: `1px solid ${C.rowDivider}` },
+        root: { fontSize: 14.5, lineHeight: '21px', fontWeight: 500, padding: '16px 16px', borderBottom: `1px solid ${C.rowDivider}` },
         head: {
-          fontSize: 12,
-          lineHeight: '16px',
+          fontSize: 13,
+          lineHeight: '18px',
           fontWeight: 700,
           color: C.text2,
           backgroundColor: C.canvas,
@@ -541,8 +543,8 @@ export const theme = createTheme({
       styleOverrides: {
         root: { borderTop: `1px solid ${C.border}`, color: C.text2 },
         toolbar: { minHeight: 56 },
-        selectLabel: { fontSize: 13 },
-        displayedRows: { fontSize: 13, fontFamily: FONT_NUMERIC, fontVariantNumeric: 'tabular-nums' },
+        selectLabel: { fontSize: 13.5 },
+        displayedRows: { fontSize: 13.5, fontFamily: FONT_NUMERIC, fontVariantNumeric: 'tabular-nums' },
         actions: { '& .MuiIconButton-root': { borderRadius: '50%', [PHONE]: { width: 44, height: 44 } } },
       },
     },
@@ -552,7 +554,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 16,
-          fontSize: 14,
+          fontSize: 14.5,
           variants: [
             ...(['success', 'info', 'warning', 'error'] as const).map((sev) => ({
               props: { severity: sev },
@@ -577,14 +579,14 @@ export const theme = createTheme({
       },
     },
     MuiAlertTitle: {
-      styleOverrides: { root: { fontWeight: 700, fontSize: 14, marginBottom: 4 } },
+      styleOverrides: { root: { fontWeight: 700, fontSize: 14.5, marginBottom: 4 } },
     },
     MuiSnackbarContent: {
       styleOverrides: { root: { backgroundColor: C.text, color: '#FFFFFF', borderRadius: 16 } },
     },
     MuiBadge: {
       styleOverrides: {
-        badge: { fontSize: 12, lineHeight: '16px', fontWeight: 700, minWidth: 20, height: 20, borderRadius: radius.pill, padding: '0 6px' },
+        badge: { fontSize: 12.5, lineHeight: '16px', fontWeight: 700, minWidth: 20, height: 20, borderRadius: radius.pill, padding: '0 6px' },
         dot: { minWidth: 8, height: 8, padding: 0 },
       },
     },
@@ -616,7 +618,7 @@ export const theme = createTheme({
           padding: '0 16px',
           borderRadius: radius.pill,
           textTransform: 'none',
-          fontSize: 14,
+          fontSize: 14.5,
           fontWeight: 600,
           color: C.text2,
           '&:hover': { backgroundColor: C.subtle },

@@ -30,6 +30,9 @@ import ListPage, { type ListColumn, type SortState } from '../list/ListPage';
 import { DateFilter, KeywordField, SelectFilter } from '../list/FilterFields';
 import { csvFileName, downloadCsv, toCsv } from '../list/csv';
 import KpiTile, { GRID_SX, PASTEL_ORDER } from '../dashboard/KpiTile';
+import AdminDashboard from '../dashboard/AdminDashboard';
+import EmployeeHome, { type HomeData } from '../dashboard/EmployeeHome';
+import { ADMIN_DASHBOARD_PLACEHOLDER } from '@/app/(admin)/dashboard/placeholder';
 import { formatAmount, formatDate } from '@/lib/format';
 
 // ---------------------------------------------------------------- synthetic rows
@@ -338,6 +341,14 @@ export default function ComponentGallery() {
           </Table>
         </Section>
 
+        <Section title="Portal Home (synthetic data)">
+          <EmployeeHome displayName="Sample Employee A" roleLabel="Manager" data={DEMO_HOME} />
+        </Section>
+
+        <Section title="Admin dashboard (placeholder data)">
+          <AdminDashboard data={{ ...ADMIN_DASHBOARD_PLACEHOLDER, asAt: '2026-11-24T09:00:00+08:00' }} />
+        </Section>
+
         <Section title="KPI tiles — pastel strip (max 4, dashboards and Employees list)">
           <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))' } }}>
             {PASTEL_ORDER.map((hue, i) => (
@@ -481,3 +492,25 @@ export default function ComponentGallery() {
     </Box>
   );
 }
+
+/** Synthetic portal Home data for the gallery (no real people or amounts). */
+const DEMO_HOME: HomeData = {
+  balances: [
+    { id: 'al', name: 'Annual leave', available: 12.5, earnedToDate: 14, colorIndex: 0 },
+    { id: 'sl', name: 'Sick leave', available: 11, colorIndex: 1 },
+    { id: 'rl', name: 'Replacement leave', available: 1, colorIndex: 2, expiring: { days: 1, date: '2026-12-31' } },
+    { id: 'hl', name: 'Hospitalisation leave', available: 60, colorIndex: 3 },
+    { id: 'ml', name: 'Maternity leave', available: null, noBalanceLabel: '98 consecutive days per confinement', colorIndex: 4 },
+    { id: 'ul', name: 'Unpaid leave', available: null, colorIndex: 5 },
+    { id: 'cl', name: 'Compassionate leave', available: 3, colorIndex: 6 },
+  ],
+  pendingClaims: { count: 2, amount: 356.59 },
+  pendingItems: [
+    { ref: 'LV-2026-00121', href: '#', label: 'Annual leave · 1.0 day', set: 'leave', status: 'Pending L1' },
+    { ref: 'CL-2026-00043', href: '#', label: 'Parking', set: 'claim', status: 'Submitted' },
+  ],
+  upcomingLeave: [{ id: 'u1', type: 'Annual leave', colorIndex: 0, from: '2026-12-22', to: '2026-12-24', days: 3 }],
+  holidays: [{ date: '2026-12-25', name: 'Christmas Day', weekday: 'Friday', state: 'National' }],
+  recentClaims: [{ ref: 'CL-2026-00043', href: '#', title: 'Parking', total: 356.59, status: 'Submitted' }],
+  manager: { approvals: 3, onLeaveToday: 1, onLeaveWeek: 2, probationDue: 1, teamClaimsSubmitted: 2 },
+};

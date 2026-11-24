@@ -92,7 +92,7 @@ export function ProfileTabs({ tabs, value, onChange, label = 'Profile sections' 
               t.count !== undefined && t.count !== null ? (
                 <Stack direction="row" spacing={0.75} alignItems="center">
                   <span>{t.label}</span>
-                  <Box component="span" sx={{ px: 0.75, borderRadius: 8, fontSize: 12, bgcolor: t.value === value ? 'background.paper' : 'tone.grey.bg', color: t.value === value ? 'tone.violet.fg' : 'tone.grey.fg', fontWeight: 700 }}>
+                  <Box component="span" sx={{ px: 0.75, borderRadius: 8, fontSize: 12.5, bgcolor: t.value === value ? 'background.paper' : 'tone.grey.bg', color: t.value === value ? 'tone.violet.fg' : 'tone.grey.fg', fontWeight: 700 }}>
                     {t.count}
                   </Box>
                 </Stack>

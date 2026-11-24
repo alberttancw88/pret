@@ -1,6 +1,9 @@
 // PRET type scale — Sunrise (theme-tokens.md §4). Every variant sets explicit size/line-height:
 // MUI's defaults are much larger (default h3 = 48px) and must never leak through.
 //
+// Review fixes (Albert, v0.2.12): the scale was raised one step for readability and body copy
+// uses weight 500 (Plus Jakarta Sans at 400 reads thin at 14–15 px). Captions never go below 12.5.
+//
 // Numerals (§1): Plus Jakarta Sans ships tabular figures (`tnum`), verified in the browser for
 // W2-009 (digits measure equal width with tabular-nums), so FONT_NUMERIC uses the same face and
 // the optional Inter request is dropped. Money, counts and dates use `.pret-tnum`.
@@ -41,9 +44,9 @@ export const typography: TypographyVariantsOptions = {
   // Card title, hero section title
   h6: { fontWeight: 700, fontSize: px(16), lineHeight: px(24), letterSpacing: 0 },
   subtitle1: { fontWeight: 600, fontSize: px(16), lineHeight: px(24) },
-  subtitle2: { fontWeight: 600, fontSize: px(14), lineHeight: px(20) }, // nav label, row title
-  body1: { fontWeight: 400, fontSize: px(15), lineHeight: px(22), [PHONE]: { fontSize: px(16), lineHeight: px(24) } },
-  body2: { fontWeight: 400, fontSize: px(14), lineHeight: px(20) }, // table cells, helper copy
+  subtitle2: { fontWeight: 600, fontSize: px(14.5), lineHeight: px(20) }, // nav label, row title
+  body1: { fontWeight: 500, fontSize: px(15), lineHeight: px(22), [PHONE]: { fontSize: px(16), lineHeight: px(24) } },
+  body2: { fontWeight: 500, fontSize: px(14.5), lineHeight: px(21) }, // table cells, helper copy
   button: {
     fontWeight: 700,
     fontSize: px(14),
@@ -52,22 +55,23 @@ export const typography: TypographyVariantsOptions = {
     letterSpacing: 0,
     [PHONE]: { fontSize: px(15) },
   },
-  caption: { fontWeight: 500, fontSize: px(12), lineHeight: px(18) },
+  caption: { fontWeight: 500, fontSize: px(12.5), lineHeight: px(18) },
   overline: {
     fontWeight: 700,
-    fontSize: px(12),
+    fontSize: px(12.5),
     lineHeight: px(16),
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
   },
+  // One number size everywhere (KPI tiles, balances) — review fix: 28/34 700.
   kpi: {
     fontFamily: FONT_NUMERIC,
-    fontWeight: 800,
-    fontSize: px(32),
-    lineHeight: px(38),
-    letterSpacing: '-0.02em',
+    fontWeight: 700,
+    fontSize: px(28),
+    lineHeight: px(34),
+    letterSpacing: '-0.015em',
     fontVariantNumeric: 'tabular-nums',
-    [PHONE]: { fontSize: px(28), lineHeight: px(34) },
+    [PHONE]: { fontSize: px(26), lineHeight: px(32) },
   },
-  chip: { fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: px(12), lineHeight: px(16) },
+  chip: { fontFamily: FONT_FAMILY, fontWeight: 700, fontSize: px(12.5), lineHeight: px(16) },
 };

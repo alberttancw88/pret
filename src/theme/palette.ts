@@ -26,15 +26,27 @@ export const tile: Record<TileName, Tile> = {
 };
 export const TILE_ORDER: TileName[] = ['lavender', 'sky', 'peach', 'mint', 'rose'];
 
-/** Portal Home hero and sign-in brand panel only (§0 rule 2, §3.4). */
+/**
+ * Portal Home hero (§8.4), toned down after Albert's review of v0.2.12: a soft lavender band
+ * with dark ink text instead of the saturated violet. Portal Home only (calm rule 2).
+ */
 export const hero: Hero = {
-  gradient: 'linear-gradient(135deg, #6D28D9 0%, #4F46E5 100%)',
-  stops: ['#6D28D9', '#4F46E5'],
-  decor: 'rgba(255,255,255,0.10)',
-  // Spec value #EDE9FE fails §12.4 under the decor circle on the end stop (4.31 : 1);
-  // #F5F3FF keeps the look and passes everywhere (≥ 4.67 : 1). See W2-009 frontend report.
+  gradient: 'linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%)',
+  stops: ['#F5F3FF', '#EDE9FE'],
+  decor: 'rgba(109,40,217,0.06)',
+  ink: '#1F1B3B',
+  subtext: '#5B5675',
+  shadow: 'none',
+};
+
+/** Sign-in brand panel: keeps a violet gradient, softened (lighter, bluer end) after review. */
+export const brand: Hero = {
+  gradient: 'linear-gradient(135deg, #7C3AED 0%, #5551D9 100%)',
+  stops: ['#7C3AED', '#5551D9'],
+  decor: 'rgba(255,255,255,0.08)',
+  ink: '#FFFFFF',
   subtext: '#F5F3FF',
-  shadow: '0 14px 28px -14px rgba(79,70,229,0.70)',
+  shadow: '0 14px 28px -16px rgba(85,81,217,0.55)',
 };
 
 // Leave-type legend colours (LT32). Dots/bars only — text never sits on these; each ≥ 3 : 1 on white.
@@ -96,6 +108,7 @@ export const palette: PaletteOptions = {
   tone,
   tile,
   hero,
+  brand,
   leaveType,
 };
 

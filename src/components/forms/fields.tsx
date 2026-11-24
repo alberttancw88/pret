@@ -492,10 +492,11 @@ export function ChipsInput({
 export function KeyValue({ label, value, full }: { label: string; value: React.ReactNode; full?: boolean }) {
   return (
     <Box data-full={full ? 'true' : undefined}>
-      <Typography variant="caption" color="text.secondary" component="p">
+      {/* Review fix: label 13/600 secondary ink, value 15/500 (body1) — same as form labels. */}
+      <Typography component="p" color="text.secondary" sx={{ fontSize: '0.8125rem', lineHeight: '18px', fontWeight: 600, mb: 0.25 }}>
         {label}
       </Typography>
-      <Typography variant="body1" component="div" sx={{ wordBreak: 'break-word' }}>
+      <Typography variant="body1" component="div" sx={{ wordBreak: 'break-word', fontWeight: 500 }}>
         {value === null || value === undefined || value === '' ? '—' : value}
       </Typography>
     </Box>

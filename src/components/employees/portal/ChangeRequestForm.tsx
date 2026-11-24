@@ -112,7 +112,7 @@ export default function ChangeRequestForm({
     setV({
       fullName: p.fullName,
       mykad: '',
-      maritalStatus: p.maritalStatus,
+      maritalStatus: p.maritalStatus ?? '',
       isOku: p.isOku,
       okuCardNo: p.okuCardNo ?? '',
       religion: p.religion ?? '',
@@ -425,7 +425,7 @@ export default function ChangeRequestForm({
       case 'marital_spouse':
         return (
           <>
-            <Row label="Marital status" current={MARITAL_STATUS_LABELS[p.maritalStatus]}>
+            <Row label="Marital status" current={p.maritalStatus ? MARITAL_STATUS_LABELS[p.maritalStatus] : '—'}>
               <SelectInput label="New marital status" required value={str('maritalStatus')} onChange={(x) => setVal('maritalStatus', x)} options={optionsOf(MARITAL_STATUS_LABELS)} error={e.maritalStatus} />
             </Row>
             {spouses.map((sp, i) => (

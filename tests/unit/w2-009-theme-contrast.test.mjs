@@ -3,7 +3,7 @@
 // must stay AA (4.5 : 1 text, 3 : 1 non-text). Reads the real tokens from src/theme/palette.ts.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hero, palette, tile, tone } from '../../src/theme/palette.ts';
+import { brand, hero, palette, tile, tone } from '../../src/theme/palette.ts';
 
 const WHITE = '#FFFFFF';
 const CANVAS = '#F7F4FF';
@@ -88,14 +88,29 @@ test('§12.3 buttons: main vs contrastText ≥ 4.5 (primary ≥ 7); secondary bu
   atLeast(palette.link, CANVAS, 4.5, 'link on canvas');
 });
 
-test('§12.4 hero: white and subtext on both gradient stops, also under the decor circle', () => {
+test('§12.4 hero (portal Home, soft lavender band): ink, subtext and links on both stops and under the decor', () => {
   for (const stop of hero.stops) {
-    for (const fg of [WHITE, hero.subtext]) {
-      atLeast(fg, stop, 4.5, `hero ${fg} on ${stop}`);
-      atLeast(fg, over(hero.decor, stop), 4.5, `hero ${fg} on ${stop} + decor`);
+    for (const [fg, what] of [[hero.ink, 'ink'], [hero.subtext, 'subtext'], [palette.link, 'All › link'], [palette.primary.dark, 'role chip text']]) {
+      atLeast(fg, stop, 4.5, `hero ${what} on ${stop}`);
+      atLeast(fg, over(hero.decor, stop), 4.5, `hero ${what} on ${stop} + decor`);
     }
   }
   assert.ok(hero.gradient.includes(hero.stops[0]) && hero.gradient.includes(hero.stops[1]), 'stops match the gradient');
+  // Balance tiles on the band are white faces: tile ink label and body text on white.
+  for (const [name, t] of Object.entries(tile)) {
+    atLeast(t.ink, WHITE, 4.5, `tile.${name} ink on white balance tile`);
+    atLeast(t.accent, WHITE, 3, `tile.${name} accent bar on white`);
+  }
+});
+
+test('§12.4b sign-in brand panel (softened gradient): white and subtext on both stops and under the decor', () => {
+  for (const stop of brand.stops) {
+    for (const fg of [brand.ink, brand.subtext]) {
+      atLeast(fg, stop, 4.5, `brand ${fg} on ${stop}`);
+      atLeast(fg, over(brand.decor, stop), 4.5, `brand ${fg} on ${stop} + decor`);
+    }
+  }
+  assert.ok(brand.gradient.includes(brand.stops[0]) && brand.gradient.includes(brand.stops[1]), 'stops match the gradient');
 });
 
 test('§12.5 non-text: control border and focus ring on white and canvas ≥ 3', () => {
@@ -103,14 +118,16 @@ test('§12.5 non-text: control border and focus ring on white and canvas ≥ 3',
     atLeast(palette.controlBorder, bg, 3, 'controlBorder');
     atLeast(palette.primary.main, bg, 3, 'focus ring');
   }
-  atLeast(WHITE, palette.primary.main, 3, 'white focus ring on the active nav pill');
 });
 
-test('§12.6 shell: active nav and bottom-bar label', () => {
-  atLeast(WHITE, '#6D28D9', 4.5, 'active nav item');
+test('§12.6 shell: active nav (soft tint) and bottom-bar label', () => {
+  atLeast('#5B21B6', tone.violet.bg, 4.5, 'active nav label on violet tint');
+  atLeast('#5B21B6', palette.grey[300], 4.5, 'active nav label on hover');
+  atLeast(WHITE, palette.primary.main, 4.5, 'white icon on the active (violet) nav tile');
+  atLeast(palette.primary.main, tone.violet.bg, 3, 'active nav tile against the tint');
   atLeast('#5B21B6', WHITE, 4.5, 'active bottom-bar label');
   atLeast(TEXT2, WHITE, 4.5, 'inactive bottom-bar label');
-  atLeast(WHITE, over('rgba(255,255,255,0.20)', '#6D28D9'), 4.5, 'icon on the active nav tile');
+  atLeast(WHITE, '#6D28D9', 4.5, 'selected bottom-bar icon pill');
 });
 
 test('text tokens on white and canvas', () => {

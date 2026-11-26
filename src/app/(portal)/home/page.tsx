@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { requireUser } from '@/server/auth/current-user';
 import { getHomeLeave } from '@/server/queries/leave';
 import { getHomeClaims } from '@/server/queries/claims';
+import { getManagerDashboard } from '@/server/queries/reports';
 import { CLAIM_STATUS_LABELS } from '@/server/contracts/claims';
 import type { StatusValue } from '@/components/StatusChip';
 import { sumMoney } from '@/lib/format';
@@ -14,10 +15,12 @@ export const dynamic = 'force-dynamic';
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 // S-PT-01 · /home — any signed-in employee user (manager panel for MGR). Leave parts are live (W2-004:
-// getHomeLeave — incl. the next 3 published holidays for my work state and probation-due counts); claims parts live (W2-005: getHomeClaims).
+// getHomeLeave — incl. the next 3 published holidays for my work state); claims parts live (W2-005: getHomeClaims);
+// manager panel live (W2-007: getManagerDashboard, F-RPT-22).
 export default async function HomePage() {
   const user = await requireUser();
-  const [leave, claims] = await Promise.all([getHomeLeave(), getHomeClaims()]);
+  const isManager = user.roles.includes('MGR') && !user.isExternal;
+  const [leave, claims, mgr] = await Promise.all([getHomeLeave(), getHomeClaims(), isManager ? getManagerDashboard() : Promise.resolve(null)]);
   const submitted = claims.pending.filter((c) => c.status === 'submitted');
   const claimChip = (s: keyof typeof CLAIM_STATUS_LABELS) => CLAIM_STATUS_LABELS[s] as StatusValue<'claim'>;
   const data: HomeData = {
@@ -58,8 +61,9 @@ export default async function HomePage() {
     })),
     holidaysNote: leave.holidaysNote,
     recentClaims: claims.recent.slice(0, 3).map((c) => ({ ref: c.claimNo, href: c.href, title: c.title, total: c.total, status: claimChip(c.status) })),
-    manager: leave.manager
-      ? { approvals: leave.manager.approvalsWaiting, onLeaveToday: leave.manager.teamOnLeaveToday, onLeaveWeek: leave.manager.teamOnLeaveThisWeek, probationDue: leave.manager.probationDue, teamClaimsSubmitted: claims.manager?.teamClaimsSubmitted ?? null }
+    // F-RPT-22 manager panel (W2-007): one query for the five figures and their report drill-ins.
+    manager: mgr
+      ? { approvals: mgr.approvalsWaiting, onLeaveToday: mgr.teamOnLeaveToday, onLeaveWeek: mgr.teamOnLeaveThisWeek, probationDue: mgr.probationDue, teamClaimsSubmitted: mgr.teamClaimsSubmitted, links: mgr.links }
       : null,
   };
   return <EmployeeHome displayName={user.displayName} roleLabel={roleChipLabel(user)} data={data} />;

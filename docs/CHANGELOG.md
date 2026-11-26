@@ -9,6 +9,29 @@ Convention: `PATCH` bumps per commit · `MINOR` bump at each wave/gate milestone
 
 ## [Unreleased]
 
+## [0.2.14] — 2026-11-26 — W2-007 Reports & notifications built
+### Added
+- Live admin dashboard (placeholder data removed), manager dashboard on Home, Employees-list KPI
+  strip.
+- Reports catalogue and one report viewer for 20 R1.0 reports and the individual leave report
+  (P7): filters, totals, CSV / .xlsx / PDF exports (access-logged); managers team-only with
+  medical leave grouped as "Medical".
+- Monthly payroll-input pack for Kakitangan (no claims, D16) with export register and reversals.
+- Email delivery via Resend from the outbox (prompt send after each action, daily retry sweep,
+  backoff), 40 fixed PDPA-checked templates, restricted delivery outside production; reminders,
+  daily digest and HR alerts (nightly job 00:20 MYT); notification log (A15) and SA-editable
+  templates (A16).
+- Database: 1 migration on `pret-dev` (notification templates, payroll-input export register,
+  log/retry functions; RLS forced).
+- Tests: W2-007 73/73 and all earlier suites; unit 138/138.
+- D36: W2-007 defaults accepted.
+### Fixed
+- Dashboard claim tiles now link to the claims list on the same submitted-date basis as their
+  counts; Reports nav links now open `/reports`.
+### Known gaps
+- No email is sent until Resend and the sending domain are configured. Signed-in report and
+  export flows not yet exercised in a browser.
+
 ## [0.2.13] — 2026-11-24 — Sunrise review fixes
 ### Changed
 - Purple toned down (Albert's review): soft lavender portal Home hero with white leave tiles

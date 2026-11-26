@@ -10,6 +10,8 @@ import {
   type EmployeeListParams,
 } from '@/server/contracts/employees';
 import EmployeesList from '@/components/employees/EmployeesList';
+import EmployeeKpiStrip from '@/components/employees/EmployeeKpiStrip';
+import { getEmployeeKpis } from '@/server/queries/reports';
 import { EMPLOYEE_FILTERS, EMPLOYEE_SORTS, isoOrUndef, pickList, uuidList, uuidOrUndef } from '@/components/employees/filters';
 import { readListParams, toPageParams, type SearchParamsRecord } from '@/lib/list-params';
 
@@ -40,6 +42,11 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
     completeness: (COMPLETENESS_FILTERS as readonly string[]).includes(f.completeness) ? (f.completeness as EmployeeListParams['completeness']) : undefined,
     portalAccount: pickList(f.portalAccount, PORTAL_ACCOUNT_STATES),
   };
-  const [list, options] = await Promise.all([listEmployees(params), getOrgOptions()]);
-  return <EmployeesList rows={list.rows} total={list.total} params={params} options={options} />;
+  const [list, options, kpis] = await Promise.all([listEmployees(params), getOrgOptions(), getEmployeeKpis()]);
+  return (
+    <>
+      <EmployeeKpiStrip kpis={kpis} />
+      <EmployeesList rows={list.rows} total={list.total} params={params} options={options} />
+    </>
+  );
 }

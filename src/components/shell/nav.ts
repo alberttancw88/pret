@@ -160,7 +160,9 @@ export function buildNav(user: ShellUser): NavSection[] {
         { id: 'team-leave', label: 'Team leave', href: '/team/leave' },
         { id: 'team-balances', label: 'Team balances', href: '/team/balances' },
         { id: 'team-claims', label: 'Team claims', href: '/team/claims' },
-        { id: 'team-reports', label: 'Team reports', href: '/team/reports' },
+        // S-RP-02 team scope (W2-007). Admins reach the same catalogue from Admin ▸ Reports, so the
+        // leaf is left out for them (one active nav item per route).
+        ...(adm ? [] : [{ id: 'team-reports', label: 'Team reports', href: '/reports' }]),
       ],
     });
   }
@@ -250,7 +252,7 @@ export function buildNav(user: ShellUser): NavSection[] {
           { id: 'org-groups', label: 'Employee groups', href: '/organisation/groups' },
         ],
       },
-      { id: 'reports', label: 'Reports', icon: 'reports', href: '/admin/reports' },
+      { id: 'reports', label: 'Reports', icon: 'reports', href: '/reports' },
       {
         id: 'imports',
         label: 'Imports',

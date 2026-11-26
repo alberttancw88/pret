@@ -120,6 +120,7 @@ export const STATUS_MAP = {
     Expired: o('grey'),
   },
   phCalendar: {
+    'Not started': o('grey'),
     Draft: o('warning'),
     Published: f('success'),
   },

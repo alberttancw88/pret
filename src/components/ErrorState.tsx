@@ -35,7 +35,8 @@ export default function ErrorState({ kind = 'card', message, reference, onRetry,
     return (
       <Alert
         severity="error"
-        sx={{ py: 0, alignItems: 'center' }}
+        // Wraps inside narrow dashboard tiles (W2-007: live tiles can fail one by one).
+        sx={{ py: 0, alignItems: 'center', flexWrap: 'wrap', '& .MuiAlert-message': { minWidth: 0, overflow: 'visible' }, '& .MuiAlert-action': { ml: 0, pl: 0 } }}
         action={
           onRetry ? (
             <Button color="inherit" size="small" onClick={onRetry}>

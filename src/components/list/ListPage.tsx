@@ -168,7 +168,9 @@ export default function ListPage<R>(props: ListPageProps<R>) {
   const [density, setDensity] = useDensity();
   // Density is an admin-list control (§10); self-service lists stay comfortable.
   const pathname = usePathname() ?? '';
-  const portalList = PORTAL_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  // Admin screens under a portal prefix (A15/A16 /notifications/log|templates, W2-007) keep the density toggle.
+  const adminUnderPortal = pathname.startsWith('/notifications/log') || pathname.startsWith('/notifications/templates');
+  const portalList = !adminUnderPortal && PORTAL_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const compact = density === 'compact' && !phone && !portalList;
 
   const refOf = (row: R) => getRowRef?.(row) ?? String(columns[0]?.value?.(row) ?? getRowId(row));

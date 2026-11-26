@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getUserContext, requireUser, type CurrentUser, type Role } from '../auth/current-user';
 import { sql, toPretError, type Tx, type UserTxContext } from '../db';
 import type { ActionFail } from '../contracts/common';
+import { scheduleDispatch } from '../email/dispatch';
 
 // Shared plumbing for W2-002 queries and Server Actions (not a 'use server' module).
 
@@ -261,6 +262,8 @@ export async function runAction<S extends z.ZodTypeAny, R extends object>(
   try {
     const r = await fn(parsed.data, a);
     if ((r as ActionFail).ok === false) return r as ActionFail;
+    // W2-007 (ADR-0010): send any outbox rows this action created, right after the response (no-op when email is not configured)
+    scheduleDispatch();
     return { ok: true as const, ...(r as R) };
   } catch (e) {
     return dbFail(e, fieldOverrides, codeMessages);

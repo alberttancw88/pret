@@ -161,9 +161,9 @@ export function MyBalancesView({ data }: { data: MyBalances }) {
       <MyLeaveTabs />
       <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between" flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
         <YearSelect year={data.year} years={data.years} />
-        {/* P7 yearly report is a W2-007 report screen (brief §3) */}
-        <Button variant="text" disabled title="Available after W2-007">
-          Yearly leave report (after W2-007)
+        {/* P7 · S-PT-07 yearly report (W2-007) — fixed to self for an employee. */}
+        <Button variant="text" component={NextLink} href={`/reports/leave-individual?year=${data.year}`}>
+          Yearly leave report
         </Button>
       </Stack>
       <BalanceCards

@@ -32,7 +32,9 @@ import { csvFileName, downloadCsv, toCsv } from '../list/csv';
 import KpiTile, { GRID_SX, PASTEL_ORDER } from '../dashboard/KpiTile';
 import AdminDashboard from '../dashboard/AdminDashboard';
 import EmployeeHome, { type HomeData } from '../dashboard/EmployeeHome';
-import { ADMIN_DASHBOARD_PLACEHOLDER } from '@/app/(admin)/dashboard/placeholder';
+import ReportViewer from '../reports/ReportViewer';
+import PayrollInputPack from '../reports/PayrollInputPack';
+import { SAMPLE_ADMIN_DASHBOARD, SAMPLE_PAYROLL_PACK, SAMPLE_REPORT_OPTIONS, SAMPLE_REPORT_RESULT } from './sampleData';
 import { formatAmount, formatDate } from '@/lib/format';
 
 // ---------------------------------------------------------------- synthetic rows
@@ -345,8 +347,23 @@ export default function ComponentGallery() {
           <EmployeeHome displayName="Sample Employee A" roleLabel="Manager" data={DEMO_HOME} />
         </Section>
 
-        <Section title="Admin dashboard (placeholder data)">
-          <AdminDashboard data={{ ...ADMIN_DASHBOARD_PLACEHOLDER, asAt: '2026-11-24T09:00:00+08:00' }} />
+        <Section title="Admin dashboard (synthetic data; Missing payroll data shows the failed-tile state)">
+          <AdminDashboard data={SAMPLE_ADMIN_DASHBOARD} preview />
+        </Section>
+
+        <Section title="Report viewer — Leave balances (synthetic data, W2-007 R3)">
+          <ReportViewer
+            def={{ id: 'leave-balances', name: 'Leave balances', description: 'Balances per employee and leave type as at a date, by department.', screenId: 'S-RP-10', sensitive: 'no', loadsOnSearch: true }}
+            result={SAMPLE_REPORT_RESULT}
+            error={null}
+            options={SAMPLE_REPORT_OPTIONS}
+            today="2026-11-26"
+            preview
+          />
+        </Section>
+
+        <Section title="Monthly payroll-input pack (synthetic data, W2-007 R5)">
+          <PayrollInputPack pack={SAMPLE_PAYROLL_PACK} today="2026-11-26" preview />
         </Section>
 
         <Section title="KPI tiles — pastel strip (max 4, dashboards and Employees list)">

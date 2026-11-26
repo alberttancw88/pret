@@ -1,4 +1,6 @@
-// Daily cron — sends scheduled employee invitations (FR-EMP-02 "join date − 3 days", E2/E15 "Schedule").
+// Daily cron — sends scheduled employee invitations (FR-EMP-02 "join date − 3 days", E2/E15 "Schedule") and, since
+// W2-007, sweeps the email outbox (ADR-0010 retry sweep: queued / retrying rows; emails are normally sent right after
+// the user's action, this is the once-a-day safety net on Vercel Hobby). Both run in runDailyJobs().
 // Called once a day by Vercel Cron (vercel.json, 16:15 UTC = 00:15 MYT, after the 00:05 MYT pg_cron
 // job app.run_employee_daily_job). The invitation token may exist only in the email (ADR-0014), so the
 // database job cannot send these; runScheduledInvites() is idempotent per user.
@@ -7,7 +9,7 @@
 // Missing secret in the environment → 503 (never run unauthenticated). The secret is never logged or echoed.
 import { timingSafeEqual } from 'node:crypto';
 import { NextResponse, type NextRequest } from 'next/server';
-import { runScheduledInvites } from '@/server/jobs/scheduled-invites';
+import { runDailyJobs } from '@/server/jobs/daily';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,9 +28,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    const invites = await runScheduledInvites();
-    return NextResponse.json({ ok: true, invites });
+    const run = await runDailyJobs();
+    return NextResponse.json({ ok: true, invites: run.invites, email: run.email });
   } catch {
-    return NextResponse.json({ ok: false, error: 'Scheduled invitations failed.' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'Daily jobs failed.' }, { status: 500 });
   }
 }

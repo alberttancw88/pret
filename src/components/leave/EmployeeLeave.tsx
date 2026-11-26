@@ -140,7 +140,7 @@ export function EmployeeLeaveTabView({
                   Add override
                 </Button>
               )}
-              <Button variant="text" disabled title="Yearly leave report (P7) arrives with W2-007">
+              <Button variant="text" component={NextLink} href={`/reports/leave-individual?employeeId=${encodeURIComponent(tab.employee.id)}&year=${tab.year}`}>
                 Yearly report
               </Button>
             </Stack>

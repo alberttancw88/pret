@@ -67,7 +67,15 @@ export type HomeData = {
   holidaysNote?: string | null;
   recentClaims: { ref: string; href: string; title: string; total: number | string; status: StatusValue<'claim'> }[];
   /** null values render "—" (value not available). */
-  manager: { approvals: number; onLeaveToday: number; onLeaveWeek: number; probationDue: number | null; teamClaimsSubmitted: number | null } | null;
+  /** F-RPT-22 manager panel (W2-007: getManagerDashboard). `links` are the drill-ins (S-AP-01, S-RP-13, S-RP-07). */
+  manager: {
+    approvals: number;
+    onLeaveToday: number;
+    onLeaveWeek: number;
+    probationDue: number | null;
+    teamClaimsSubmitted: number | null;
+    links?: { approvals: string; onLeaveToday: string; onLeaveWeek: string; probation: string; claims: string };
+  } | null;
 };
 
 export type EmployeeHomeProps = {
@@ -317,11 +325,11 @@ function QuickActions() {
 
 function ManagerPanel({ m }: { m: NonNullable<HomeData['manager']> }) {
   const rows = [
-    { label: 'Approvals waiting', value: m.approvals, href: '/approvals', accent: m.approvals > 0 ? 'primary.main' : 'grey.300' },
-    { label: 'Team on leave today', value: m.onLeaveToday, href: '/team/leave?when=today', accent: 'grey.300' },
-    { label: 'Team on leave this week', value: m.onLeaveWeek, href: '/team/leave?when=week', accent: 'grey.300' },
-    { label: 'Probation due in team', value: m.probationDue, href: '/team', accent: (m.probationDue ?? 0) > 0 ? 'warning.main' : 'grey.300' },
-    { label: 'Team claims submitted', value: m.teamClaimsSubmitted, href: '/approvals?tab=claims', accent: (m.teamClaimsSubmitted ?? 0) > 0 ? 'primary.main' : 'grey.300' },
+    { label: 'Approvals waiting', value: m.approvals, href: m.links?.approvals ?? '/approvals', accent: m.approvals > 0 ? 'primary.main' : 'grey.300' },
+    { label: 'Team on leave today', value: m.onLeaveToday, href: m.links?.onLeaveToday ?? '/reports/whos-on-leave', accent: 'grey.300' },
+    { label: 'Team on leave this week', value: m.onLeaveWeek, href: m.links?.onLeaveWeek ?? '/reports/whos-on-leave', accent: 'grey.300' },
+    { label: 'Probation due in team (30 days)', value: m.probationDue, href: m.links?.probation ?? '/reports/probation-due', accent: (m.probationDue ?? 0) > 0 ? 'warning.main' : 'grey.300' },
+    { label: 'Team claims submitted', value: m.teamClaimsSubmitted, href: m.links?.claims ?? '/approvals?tab=claims', accent: (m.teamClaimsSubmitted ?? 0) > 0 ? 'primary.main' : 'grey.300' },
   ];
   return (
     <Card variant="portal">
